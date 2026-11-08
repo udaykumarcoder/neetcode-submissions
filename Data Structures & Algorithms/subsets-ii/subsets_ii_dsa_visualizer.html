@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSA Step Visualizer — Subsets II</title>
+<style>
+:root{
+  --bg:#0b1020;--panel:#121a2d;--panel2:#18233a;--line:#293754;--text:#e8eefc;
+  --muted:#9ba9c4;--blue:#66a7ff;--green:#54d6a0;--yellow:#ffd166;--red:#ff7b8b;
+  --purple:#bd9cff;--shadow:0 14px 38px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1000px 500px at 15% -10%,#1b2a4b 0%,transparent 65%),var(--bg);color:var(--text);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+button,input{font:inherit}
+.app{max-width:1440px;margin:auto;padding:26px 22px 42px}
+header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:20px}
+h1{font-size:clamp(25px,4vw,36px);line-height:1.15;margin:0 0 7px;letter-spacing:-.7px}
+.subtitle{color:var(--muted);margin:0;max-width:780px}
+.tag{border:1px solid #31527c;color:#a9d0ff;background:#142641;border-radius:99px;padding:6px 11px;font-size:12px;white-space:nowrap}
+.toolbar,.panel{background:linear-gradient(180deg,rgba(24,35,58,.98),rgba(18,26,45,.98));border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.toolbar{padding:15px;display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:5px}
+label{font-size:12px;color:var(--muted);font-weight:650}
+input{width:220px;max-width:65vw;background:#0c1425;color:var(--text);border:1px solid #344461;border-radius:9px;padding:9px 11px;outline:none}
+input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #66a7ff22}
+button{border:1px solid #3a4c6b;background:#1b2942;color:var(--text);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:650;transition:.15s}
+button:hover:not(:disabled){transform:translateY(-1px);border-color:#6daeff;background:#223655}
+button:disabled{opacity:.38;cursor:not-allowed}
+.primary{background:#2563c7;border-color:#3e83e8}
+.primary:hover:not(:disabled){background:#3175dd}
+.ghost{background:transparent}
+.status{margin-left:auto;color:var(--muted);font-size:13px}
+.progress{height:5px;background:#26334d;border-radius:99px;overflow:hidden;margin:0 0 16px}
+.progress>div{height:100%;width:0;background:linear-gradient(90deg,#438ef0,#54d6a0);transition:width .15s}
+.layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:16px;align-items:start}
+.panel{padding:17px;min-width:0}
+.panel h2{font-size:16px;margin:0 0 13px;display:flex;align-items:center;justify-content:space-between}
+.kicker{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.step-title{font-size:20px;font-weight:750;margin:0 0 5px}
+.explain{color:#c0cbe0;margin:0 0 15px;min-height:48px}
+.array{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 15px}
+.cell{width:58px;height:64px;border-radius:11px;border:1px solid #3b4a67;background:#101a2d;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.cell .val{font-size:22px;font-weight:800}
+.cell .idx{font-size:10px;color:var(--muted)}
+.cell.active{border:2px solid var(--yellow);background:#3a301c;box-shadow:0 0 0 3px #ffd1661c}
+.cell.done{border-color:#347d67}
+.pillrow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-height:44px}
+.pill{border:1px solid #3c5272;background:#172640;border-radius:9px;padding:7px 11px;font-weight:750}
+.pill.sub{border-color:#2c8c6a;background:#123c33;color:#a6f3d2}
+.empty{color:#8493ad;font-style:italic;border:1px dashed #40506d;padding:7px 11px;border-radius:9px}
+.section{margin-top:15px}
+.section-title{font-size:12px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:7px}
+.result{border:1px solid #2f795f;background:#12352f;border-radius:9px;padding:7px 9px;color:#b8f4d9;font-family:ui-monospace,monospace;font-size:13px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.metric{background:#0e1729;border:1px solid #2c3a55;border-radius:10px;padding:9px}
+.metric small{display:block;color:var(--muted);font-size:11px}
+.metric strong{font-size:17px}
+.vars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.var{background:#0e1729;border:1px solid #2c3a55;border-radius:10px;padding:9px;min-width:0}
+.var small{color:var(--muted);display:block;font-size:11px;margin-bottom:3px}
+.var strong{font-family:ui-monospace,monospace;font-size:13px;overflow-wrap:anywhere}
+.code{background:#0a1120;border:1px solid #293956;border-radius:12px;overflow:auto;padding:9px 0}
+.code-line{display:flex;gap:12px;padding:3px 12px;white-space:pre;font:13px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;color:#c9d5eb}
+.code-line .ln{color:#657795;width:19px;text-align:right;flex:none;user-select:none}
+.code-line.current{background:#173a67;border-left:3px solid var(--yellow);padding-left:9px;color:#fff}
+.code-line.current .ln{color:#ffd166;font-weight:800}
+.kw{color:#c49cff}.fn{color:#7fc8ff}.str{color:#9fdfb5}.comment{color:#7889a7}
+.why{border-left:3px solid var(--yellow);background:#302a1b;border-radius:0 9px 9px 0;padding:11px 13px;color:#f5e6bd;margin-top:14px}
+.why b{display:block;color:#ffd166;font-size:12px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+.stack{display:flex;gap:7px;flex-wrap:wrap}
+.frame{border:1px solid #405477;background:#15243c;border-radius:8px;padding:7px 9px;font:12px ui-monospace,monospace}
+.frame.top{border-color:#d5a93f;background:#3a301c;color:#ffe4a0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:10px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.footer{color:var(--muted);font-size:12px;margin-top:16px;text-align:center}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.status{width:100%;margin:2px 0 0}}
+@media(max-width:520px){.app{padding:17px 12px 30px}.panel{padding:13px}.metrics{grid-template-columns:1fr 1fr}.vars{grid-template-columns:1fr 1fr}input{width:190px}.cell{width:51px;height:59px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>DSA Step Visualizer</h1>
+      <p class="subtitle">Watch Subsets II execute one Python line at a time. The array, recursion state, variables, results and highlighted code stay synchronized.</p>
+    </div>
+    <span class="tag">SUBSETS II · LEETCODE 90</span>
+  </header>
+
+  <section class="toolbar">
+    <div class="field">
+      <label for="numsInput">Input array (comma-separated integers)</label>
+      <input id="numsInput" value="1, 2, 2" spellcheck="false" aria-label="Input array">
+    </div>
+    <button class="primary" id="runBtn">Run / Apply input</button>
+    <button id="prevBtn">← Previous</button>
+    <button class="primary" id="nextBtn">Next step →</button>
+    <button class="ghost" id="resetBtn">↺ Reset</button>
+    <span class="status" id="counter">Step 1 / 1</span>
+  </section>
+  <div class="progress"><div id="progressBar"></div></div>
+
+  <main class="layout">
+    <section class="panel">
+      <h2>Execution state <span class="kicker">Live visualization</span></h2>
+      <div class="step-title" id="stepTitle">Ready</div>
+      <p class="explain" id="explanation">Press Next step to begin.</p>
+
+      <div class="section">
+        <div class="section-title">Sorted input · nums</div>
+        <div class="array" id="arrayView"></div>
+      </div>
+      <div class="section">
+        <div class="section-title">Current subset · mutable path</div>
+        <div class="pillrow" id="subsetView"></div>
+      </div>
+      <div class="section">
+        <div class="section-title">Recursion call stack · oldest → newest</div>
+        <div class="stack" id="stackView"></div>
+      </div>
+      <div class="section">
+        <div class="section-title">Results saved so far · res</div>
+        <div class="results" id="resultsView"></div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><small>Current index · i</small><strong id="iMetric">—</strong></div>
+        <div class="metric"><small>Subset length</small><strong id="lenMetric">0</strong></div>
+        <div class="metric"><small>Saved subsets</small><strong id="resMetric">0</strong></div>
+      </div>
+      <div class="legend">
+        <span><i class="dot" style="background:#ffd166"></i>Current index</span>
+        <span><i class="dot" style="background:#54d6a0"></i>Visited index</span>
+        <span><i class="dot" style="background:#66a7ff"></i>Current call</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Python code <span class="kicker">Current line highlighted</span></h2>
+      <div class="code" id="codeView" aria-label="Python source code"></div>
+      <div class="why"><b>Why this line matters</b><span id="whyText">The trace will explain the current operation.</span></div>
+      <div class="section">
+        <div class="section-title">Variables at this exact moment</div>
+        <div class="vars">
+          <div class="var"><small>i</small><strong id="varI">—</strong></div>
+          <div class="var"><small>nums[i]</small><strong id="varNum">—</strong></div>
+          <div class="var"><small>subset</small><strong id="varSubset">[]</strong></div>
+          <div class="var"><small>res length</small><strong id="varRes">0</strong></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <p class="footer">Educational trace for Subsets II. No server, account, API key or external library required — this file runs locally in your browser.</p>
+</div>
+
+<script>
+const SOURCE = [
+"res = []",
+"nums.sort()",
+"",
+"def backtrack(i, subset):",
+"    if i == len(nums):",
+"        res.append(subset[:])",
+"        return",
+"",
+"    # Include current element",
+"    subset.append(nums[i])",
+"    backtrack(i + 1, subset)",
+"    subset.pop()",
+"",
+"    # Skip duplicate elements in the exclude branch",
+"    while i + 1 < len(nums) and nums[i] == nums[i + 1]:",
+"        i += 1",
+"",
+"    backtrack(i + 1, subset)",
+"",
+"backtrack(0, [])",
+"return res"
+];
+
+let trace = [];
+let stepIndex = 0;
+let sortedNums = [];
+
+const clone = x => JSON.parse(JSON.stringify(x));
+const py = x => "[" + x.join(", ") + "]";
+
+function buildTrace(input) {
+  const nums = [...input].sort((a,b)=>a-b);
+  const res = [];
+  const subset = [];
+  const stack = [];
+  const events = [];
+  const visited = new Set();
+
+  function record(line, title, explanation, i, extra={}) {
+    const top = stack.length ? stack[stack.length-1] : null;
+    events.push({
+      line, title, explanation, i,
+      nums: [...nums], subset: [...subset], res: clone(res),
+      stack: stack.map((f,idx)=>({call:f.call, active:idx===stack.length-1})),
+      currentNum: i >= 0 && i < nums.length ? nums[i] : null,
+      visited: [...visited], returned: !!extra.returned
+    });
+  }
+
+  record(1,"Initialize result list","Create an empty list to collect every unique subset.",-1);
+  record(2,"Sort the input","Sorting puts equal values next to each other, which lets us skip duplicates together.",-1);
+  record(20,"Start recursion","Call backtrack(0, []). Begin at index 0 with an empty subset.",0);
+
+  function backtrack(i) {
+    const call = `backtrack(${i}, ${py(subset)})`;
+    stack.push({call});
+    record(4,"Enter recursive call",`A new call starts with i = ${i} and subset = ${py(subset)}.`,i);
+
+    record(5,"Check base case",`Is i == len(nums)? Here ${i} == ${nums.length} is ${i===nums.length}.`,i);
+    if (i === nums.length) {
+      res.push([...subset]);
+      record(6,"Save a copy of the subset",`The base case is reached. Append ${py(subset)} as a copy to res.`,i);
+      record(7,"Return from this call","This path is complete. Return to the previous recursive call.",i,{returned:true});
+      stack.pop();
+      return;
+    }
+
+    record(10,"Include nums[i]",`Choose nums[${i}] = ${nums[i]}. Append it to subset.`,i);
+    subset.push(nums[i]);
+    visited.add(i);
+    record(11,"Recurse after including",`Explore the include branch by calling backtrack(${i+1}, ${py(subset)}).`,i);
+    backtrack(i+1);
+
+    record(12,"Undo the include choice",`pop() removes ${subset[subset.length-1]}. Restore subset to the state before this branch.`,i);
+    subset.pop();
+
+    let skipped = [];
+    while (i + 1 < nums.length && nums[i] === nums[i+1]) {
+      record(15,"Check duplicate condition",`Compare nums[${i}] = ${nums[i]} with nums[${i+1}] = ${nums[i+1]}. They are equal, so skip this duplicate choice.`,i);
+      i += 1;
+      skipped.push(i);
+      visited.add(i);
+      record(16,"Advance past duplicate",`Increment i to ${i}. The next exclude branch will start after the duplicate run.`,i);
+    }
+    if (skipped.length === 0) {
+      record(15,"Check duplicate condition",i+1<nums.length
+        ? `Compare nums[${i}] = ${nums[i]} and nums[${i+1}] = ${nums[i+1]}. They differ, so stop skipping.`
+        : `i + 1 is outside the array, so the while condition is false.`,i);
+    }
+
+    record(18,"Exclude current value",`Do not include nums[${i}]. Explore the exclude branch with backtrack(${i+1}, ${py(subset)}).`,i);
+    backtrack(i+1);
+
+    record(19,"Finish recursive call","Both include and exclude branches are complete. Return to the caller.",i,{returned:true});
+    stack.pop();
+  }
+
+  backtrack(0);
+  record(21,"Return final result",`All branches are complete. Return ${res.length} unique subsets.`,nums.length);
+  return {events, nums};
+}
+
+const $ = id => document.getElementById(id);
+function renderCode(activeLine) {
+  $("codeView").innerHTML = "";
+  SOURCE.forEach((line,idx)=>{
+    const row = document.createElement("div");
+    row.className = "code-line" + (idx+1===activeLine ? " current" : "");
+    const number = document.createElement("span");
+    number.className = "ln";
+    number.textContent = idx+1;
+    const code = document.createElement("span");
+    code.textContent = line || " ";
+    row.append(number,code);
+    $("codeView").append(row);
+    if (idx+1===activeLine) row.scrollIntoView({block:"nearest"});
+  });
+}
+function render() {
+  const e = trace[stepIndex];
+  if (!e) return;
+  $("stepTitle").textContent = e.title;
+  $("explanation").textContent = e.explanation;
+  $("whyText").textContent = e.explanation;
+  $("arrayView").innerHTML = "";
+  e.nums.forEach((n,idx)=>{
+    const cell=document.createElement("div");
+    cell.className="cell"+(idx===e.i && e.i<e.nums.length?" active":"")+(e.visited.includes(idx)?" done":"");
+    const val=document.createElement("span");val.className="val";val.textContent=n;
+    const ix=document.createElement("span");ix.className="idx";ix.textContent=`index ${idx}`;
+    cell.append(val,ix);$("arrayView").append(cell);
+  });
+  $("subsetView").innerHTML="";
+  if (!e.subset.length) {
+    const empty=document.createElement("span");empty.className="empty";empty.textContent="[]  empty subset";$("subsetView").append(empty);
+  } else e.subset.forEach(v=>{
+    const p=document.createElement("span");p.className="pill sub";p.textContent=v;$("subsetView").append(p);
+  });
+  $("stackView").innerHTML="";
+  if (!e.stack.length) {
+    const empty=document.createElement("span");empty.className="empty";empty.textContent="No active recursive calls";$("stackView").append(empty);
+  } else e.stack.forEach(f=>{
+    const p=document.createElement("span");p.className="frame"+(f.active?" top":"");p.textContent=f.call;$("stackView").append(p);
+  });
+  $("resultsView").innerHTML="";
+  if (!e.res.length) {
+    const empty=document.createElement("span");empty.className="empty";empty.textContent="No subsets saved yet";$("resultsView").append(empty);
+  } else e.res.forEach((r,idx)=>{
+    const p=document.createElement("div");p.className="result";p.textContent=`${idx+1}. ${py(r)}`;$("resultsView").append(p);
+  });
+  $("iMetric").textContent=e.i<0?"—":e.i;
+  $("lenMetric").textContent=e.subset.length;
+  $("resMetric").textContent=e.res.length;
+  $("varI").textContent=e.i<0?"—":e.i;
+  $("varNum").textContent=e.currentNum===null?"out of range":e.currentNum;
+  $("varSubset").textContent=py(e.subset);
+  $("varRes").textContent=e.res.length;
+  renderCode(e.line);
+  $("counter").textContent=`Step ${stepIndex+1} / ${trace.length}`;
+  $("progressBar").style.width=`${((stepIndex+1)/trace.length)*100}%`;
+  $("prevBtn").disabled=stepIndex===0;
+  $("nextBtn").disabled=stepIndex===trace.length-1;
+}
+function parseInput() {
+  const raw=$("numsInput").value.trim();
+  if (!raw) return [];
+  const parts=raw.split(",");
+  if (parts.some(x=>x.trim()==="" || !/^-?\d+$/.test(x.trim()))) throw new Error("Enter integers separated by commas, for example: 1, 2, 2");
+  const values=parts.map(x=>Number(x.trim()));
+  if (values.length>10) throw new Error("For a readable recursion trace, use at most 10 numbers.");
+  return values;
+}
+function resetAndBuild() {
+  try {
+    const values=parseInput();
+    const built=buildTrace(values);
+    trace=built.events;sortedNums=built.nums;stepIndex=0;render();
+  } catch(err) { alert(err.message); }
+}
+$("prevBtn").addEventListener("click",()=>{if(stepIndex>0){stepIndex--;render();}});
+$("nextBtn").addEventListener("click",()=>{if(stepIndex<trace.length-1){stepIndex++;render();}});
+$("resetBtn").addEventListener("click",()=>{stepIndex=0;render();});
+$("runBtn").addEventListener("click",resetAndBuild);
+$("numsInput").addEventListener("keydown",e=>{if(e.key==="Enter")resetAndBuild();});
+resetAndBuild();
+</script>
+</body>
+</html>
