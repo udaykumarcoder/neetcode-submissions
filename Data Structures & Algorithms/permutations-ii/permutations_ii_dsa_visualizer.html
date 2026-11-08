@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSA Step Visualizer — Permutations II</title>
+<style>
+:root{--bg:#0b1020;--panel:#121a2d;--line:#293754;--text:#e8eefc;--muted:#9ba9c4;--blue:#66a7ff;--green:#54d6a0;--yellow:#ffd166;--purple:#bd9cff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(1000px 500px at 15% -10%,#1b2a4b 0%,transparent 65%),var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.app{max-width:1440px;margin:auto;padding:26px 22px 42px}header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:20px}
+h1{font-size:clamp(25px,4vw,36px);line-height:1.15;margin:0 0 7px;letter-spacing:-.7px}.subtitle{color:var(--muted);margin:0;max-width:800px}
+.tag{border:1px solid #31527c;color:#a9d0ff;background:#142641;border-radius:99px;padding:6px 11px;font-size:12px;white-space:nowrap}
+.toolbar,.panel{background:linear-gradient(180deg,rgba(24,35,58,.98),rgba(18,26,45,.98));border:1px solid var(--line);border-radius:16px;box-shadow:0 14px 38px rgba(0,0,0,.25)}
+.toolbar{padding:15px;display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:16px}.field{display:flex;flex-direction:column;gap:5px}
+label{font-size:12px;color:var(--muted);font-weight:650}input{width:220px;max-width:65vw;background:#0c1425;color:var(--text);border:1px solid #344461;border-radius:9px;padding:9px 11px;outline:none}
+input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #66a7ff22}button{border:1px solid #3a4c6b;background:#1b2942;color:var(--text);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:650;transition:.15s}
+button:hover:not(:disabled){transform:translateY(-1px);border-color:#6daeff;background:#223655}button:disabled{opacity:.38;cursor:not-allowed}.primary{background:#2563c7;border-color:#3e83e8}.primary:hover:not(:disabled){background:#3175dd}.ghost{background:transparent}.status{margin-left:auto;color:var(--muted);font-size:13px}
+.progress{height:5px;background:#26334d;border-radius:99px;overflow:hidden;margin:0 0 16px}.progress>div{height:100%;width:0;background:linear-gradient(90deg,#438ef0,#54d6a0);transition:width .15s}
+.layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:16px;align-items:start}.panel{padding:17px;min-width:0}.panel h2{font-size:16px;margin:0 0 13px;display:flex;align-items:center;justify-content:space-between}
+.kicker{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px}.step-title{font-size:20px;font-weight:750;margin:0 0 5px}.explain{color:#c0cbe0;margin:0 0 15px;min-height:48px}
+.section{margin-top:15px}.section-title{font-size:12px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1px solid #3b4a67;background:#101a2d;border-radius:10px;padding:8px 11px;min-width:48px;text-align:center}.chip strong{font-size:18px}.chip small{display:block;color:var(--muted);font-size:10px}.chip.active{border:2px solid var(--yellow);background:#3a301c}.chip.used{border-color:#347d67}
+.pillrow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-height:42px}.pill{border:1px solid #2c8c6a;background:#123c33;color:#a6f3d2;border-radius:9px;padding:7px 11px;font-weight:750}.empty{color:#8493ad;font-style:italic;border:1px dashed #40506d;padding:7px 11px;border-radius:9px}
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:7px}.result{border:1px solid #2f795f;background:#12352f;border-radius:9px;padding:7px 9px;color:#b8f4d9;font:13px ui-monospace,monospace}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.metric,.var{background:#0e1729;border:1px solid #2c3a55;border-radius:10px;padding:9px;min-width:0}.metric small,.var small{display:block;color:var(--muted);font-size:11px}.metric strong{font-size:17px}
+.vars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.var strong{font:13px ui-monospace,monospace;overflow-wrap:anywhere}
+.code{background:#0a1120;border:1px solid #293956;border-radius:12px;overflow:auto;padding:9px 0;max-height:680px}.code-line{display:flex;gap:12px;padding:3px 12px;white-space:pre;font:13px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;color:#c9d5eb}
+.code-line .ln{color:#657795;width:19px;text-align:right;flex:none;user-select:none}.code-line.current{background:#173a67;border-left:3px solid var(--yellow);padding-left:9px;color:#fff}.code-line.current .ln{color:#ffd166;font-weight:800}
+.why{border-left:3px solid var(--yellow);background:#302a1b;border-radius:0 9px 9px 0;padding:11px 13px;color:#f5e6bd;margin-top:14px}.why b{display:block;color:#ffd166;font-size:12px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+.stack{display:flex;gap:7px;flex-wrap:wrap}.frame{border:1px solid #405477;background:#15243c;border-radius:8px;padding:7px 9px;font:12px ui-monospace,monospace}.frame.top{border-color:#d5a93f;background:#3a301c;color:#ffe4a0}
+.footer{color:var(--muted);font-size:12px;margin-top:16px;text-align:center}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.status{width:100%;margin:2px 0 0}}@media(max-width:520px){.app{padding:17px 12px 30px}.panel{padding:13px}.metrics{grid-template-columns:1fr 1fr}.vars{grid-template-columns:1fr 1fr}.chip{min-width:40px}input{width:190px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div><h1>DSA Step Visualizer</h1><p class="subtitle">Watch Permutations II execute one Python line at a time. Follow the frequency map, current permutation, recursion stack, results and highlighted code together.</p></div><span class="tag">PERMUTATIONS II · LEETCODE 47</span></header>
+<section class="toolbar">
+  <div class="field"><label for="numsInput">Input array (comma-separated integers)</label><input id="numsInput" value="1, 1, 2" spellcheck="false" aria-label="Input array"></div>
+  <button class="primary" id="runBtn">Run / Apply input</button><button id="prevBtn">← Previous</button><button class="primary" id="nextBtn">Next step →</button><button class="ghost" id="resetBtn">↺ Reset</button><span class="status" id="counter">Step 1 / 1</span>
+</section>
+<div class="progress"><div id="progressBar"></div></div>
+<main class="layout">
+<section class="panel">
+<h2>Execution state <span class="kicker">Live visualization</span></h2>
+<div class="step-title" id="stepTitle">Ready</div><p class="explain" id="explanation">Press Next step to begin.</p>
+<div class="section"><div class="section-title">Input · nums</div><div class="chips" id="arrayView"></div></div>
+<div class="section"><div class="section-title">Frequency map · count</div><div class="chips" id="countView"></div></div>
+<div class="section"><div class="section-title">Current permutation · perm</div><div class="pillrow" id="permView"></div></div>
+<div class="section"><div class="section-title">Recursion call stack · oldest → newest</div><div class="stack" id="stackView"></div></div>
+<div class="section"><div class="section-title">Completed unique permutations · res</div><div class="results" id="resultsView"></div></div>
+<div class="metrics"><div class="metric"><small>Current choice · n</small><strong id="nMetric">—</strong></div><div class="metric"><small>Permutation length</small><strong id="lenMetric">0</strong></div><div class="metric"><small>Saved permutations</small><strong id="resMetric">0</strong></div></div>
+</section>
+<section class="panel">
+<h2>Python code <span class="kicker">Current line highlighted</span></h2><div class="code" id="codeView" aria-label="Python source code"></div>
+<div class="why"><b>Why this line matters</b><span id="whyText">The trace will explain the current operation.</span></div>
+<div class="section"><div class="section-title">Variables at this exact moment</div><div class="vars">
+<div class="var"><small>n · current dictionary key</small><strong id="varN">—</strong></div><div class="var"><small>count</small><strong id="varCount">{}</strong></div>
+<div class="var"><small>perm</small><strong id="varPerm">[]</strong></div><div class="var"><small>res length</small><strong id="varRes">0</strong></div>
+</div></div>
+</section>
+</main>
+<p class="footer">Educational trace for Permutations II. Runs locally in your browser — no server, Python installation, account, API key or external library required.</p>
+</div>
+<script>
+const SOURCE = [
+"class Solution:",
+"    def permuteUnique(self, nums: List[int]) -> List[List[int]]:",
+"        res = []",
+"        perm = []",
+"        count = { n: 0 for n in nums }",
+"        for n in nums:",
+"            count[n] += 1",
+"",
+"        def dfs():",
+"            if len(perm) == len(nums):",
+"                res.append(perm.copy())",
+"                return",
+"",
+"            for n in count:",
+"                if count[n] > 0:",
+"                    perm.append(n)",
+"                    count[n] -= 1",
+"",
+"                    dfs()",
+"",
+"                    count[n] += 1",
+"                    perm.pop()",
+"",
+"        dfs()",
+"        return res"
+];
+let trace=[], stepIndex=0;
+const $=id=>document.getElementById(id);
+const copy=x=>JSON.parse(JSON.stringify(x));
+const fmt=a=>"["+a.join(", ")+"]";
+function buildTrace(input){
+ const nums=[...input], count={}; nums.forEach(n=>{count[n]=0;});
+ const keys=Object.keys(count).map(Number), perm=[], res=[], stack=[], events=[];
+ function record(line,title,explanation,currentN=null){
+  events.push({line,title,explanation,nums:[...nums],count:{...count},perm:[...perm],res:copy(res),
+   stack:stack.map((f,i)=>({call:f.call,active:i===stack.length-1})),currentN});
+ }
+ record(3,"Initialize results","Create an empty list that will hold completed unique permutations.");
+ record(4,"Initialize current permutation","Start with an empty path. We build one permutation from left to right.");
+ record(5,"Create frequency map","Create one dictionary key per distinct number, initially with frequency 0.");
+ for(const n of nums){record(6,"Visit input number",`The for-loop reads n = ${n}. Increase that number's frequency.`,n);count[n]+=1;record(7,"Increment frequency",`count[${n}] becomes ${count[n]}. Repeated values share the same dictionary key.`,n);}
+ record(9,"Define DFS","Define the recursive function. It will fill the next position of perm.");
+ record(24,"Start DFS","Call dfs() to build every distinct permutation.");
+ function dfs(){
+  stack.push({call:`dfs() · perm=${fmt(perm)}`});
+  record(9,"Enter dfs() call",`Begin a recursive level with perm = ${fmt(perm)}.`);
+  record(10,"Check completion",`Is len(perm) == len(nums)? ${perm.length} == ${nums.length} is ${perm.length===nums.length}.`);
+  if(perm.length===nums.length){
+   res.push([...perm]);record(11,"Save completed permutation",`The permutation is complete. Append a COPY ${fmt(perm)} to res.`);
+   record(12,"Return from base case","This permutation is finished. Return to the previous DFS call.");
+   stack.pop();return;
+  }
+  for(const n of keys){
+   record(14,"Try next distinct number",`The for-loop considers dictionary key n = ${n}. Each distinct value is considered once at this level.`,n);
+   record(15,"Check remaining frequency",`Check count[${n}] > 0. Current count is ${count[n]}, so the condition is ${count[n]>0}.`,n);
+   if(count[n]>0){
+    perm.push(n);record(16,"Choose n",`Append ${n} to perm. This fixes the next position of the permutation.`,n);
+    count[n]-=1;record(17,"Use one occurrence",`Decrease count[${n}] to ${count[n]}. That occurrence is now used in this path.`,n);
+    record(19,"Recurse deeper",`Call dfs() to fill the next position. Current perm = ${fmt(perm)}.`,n);
+    dfs();
+    record(21,"Restore frequency",`The recursive branch returned. Restore count[${n}] by adding 1.`,n);
+    count[n]+=1;
+    record(22,"Undo permutation choice",`pop() removes the last ${n}. Restore perm to ${fmt(perm.slice(0,-1))}.`,n);
+    perm.pop();
+   }
+  }
+  record(24,"Return after trying all keys","Every distinct key has been considered at this level. Return to its caller.");
+  stack.pop();
+ }
+ dfs();
+ record(25,"Return final results",`All branches are explored. Return ${res.length} unique permutations.`);
+ return events;
+}
+function renderCode(line){
+ $("codeView").innerHTML="";
+ SOURCE.forEach((txt,i)=>{const row=document.createElement("div");row.className="code-line"+(i+1===line?" current":"");const ln=document.createElement("span");ln.className="ln";ln.textContent=i+1;const code=document.createElement("span");code.textContent=txt||" ";row.append(ln,code);$("codeView").append(row);if(i+1===line)row.scrollIntoView({block:"nearest"});});
+}
+function render(){
+ const e=trace[stepIndex];if(!e)return;
+ $("stepTitle").textContent=e.title;$("explanation").textContent=e.explanation;$("whyText").textContent=e.explanation;
+ $("arrayView").innerHTML="";e.nums.forEach((v,i)=>{const c=document.createElement("div");c.className="chip"+(v===e.currentN?" active":"");const b=document.createElement("strong");b.textContent=v;const sm=document.createElement("small");sm.textContent=`input ${i}`;c.append(b,sm);$("arrayView").append(c);});
+ $("countView").innerHTML="";Object.entries(e.count).forEach(([k,v])=>{const c=document.createElement("div");c.className="chip"+(Number(k)===e.currentN?" active":"");const b=document.createElement("strong");b.textContent=`${k}: ${v}`;const sm=document.createElement("small");sm.textContent=v>0?"available":"all used";c.append(b,sm);$("countView").append(c);});
+ $("permView").innerHTML="";if(!e.perm.length){const x=document.createElement("span");x.className="empty";x.textContent="[]  empty permutation";$("permView").append(x);}else e.perm.forEach(v=>{const p=document.createElement("span");p.className="pill";p.textContent=v;$("permView").append(p);});
+ $("stackView").innerHTML="";if(!e.stack.length){const x=document.createElement("span");x.className="empty";x.textContent="No active recursive calls";$("stackView").append(x);}else e.stack.forEach(f=>{const p=document.createElement("span");p.className="frame"+(f.active?" top":"");p.textContent=f.call;$("stackView").append(p);});
+ $("resultsView").innerHTML="";if(!e.res.length){const x=document.createElement("span");x.className="empty";x.textContent="No permutations saved yet";$("resultsView").append(x);}else e.res.forEach((r,i)=>{const p=document.createElement("div");p.className="result";p.textContent=`${i+1}. ${fmt(r)}`;$("resultsView").append(p);});
+ $("nMetric").textContent=e.currentN===null?"—":e.currentN;$("lenMetric").textContent=e.perm.length;$("resMetric").textContent=e.res.length;
+ $("varN").textContent=e.currentN===null?"—":e.currentN;$("varCount").textContent=JSON.stringify(e.count);$("varPerm").textContent=fmt(e.perm);$("varRes").textContent=e.res.length;
+ renderCode(e.line);$("counter").textContent=`Step ${stepIndex+1} / ${trace.length}`;$("progressBar").style.width=`${(stepIndex+1)/trace.length*100}%`;
+ $("prevBtn").disabled=stepIndex===0;$("nextBtn").disabled=stepIndex===trace.length-1;
+}
+function parseInput(){const raw=$("numsInput").value.trim();if(!raw)return[];const p=raw.split(",");if(p.some(x=>!/^[-]?\d+$/.test(x.trim())))throw Error("Enter integers separated by commas, for example: 1, 1, 2");const a=p.map(x=>Number(x.trim()));if(a.length>8)throw Error("For a readable recursion trace, use at most 8 numbers.");return a;}
+function rebuild(){try{trace=buildTrace(parseInput());stepIndex=0;render();}catch(e){alert(e.message);}}
+$("prevBtn").addEventListener("click",()=>{if(stepIndex>0){stepIndex--;render();}});
+$("nextBtn").addEventListener("click",()=>{if(stepIndex<trace.length-1){stepIndex++;render();}});
+$("resetBtn").addEventListener("click",()=>{stepIndex=0;render();});
+$("runBtn").addEventListener("click",rebuild);$("numsInput").addEventListener("keydown",e=>{if(e.key==="Enter")rebuild();});
+rebuild();
+</script>
+</body>
+</html>
