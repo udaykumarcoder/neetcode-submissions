@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Generate Parentheses — DSA Visualizer</title>
+<style>
+:root{--bg:#0b1020;--panel:#151f35;--line:#30415f;--txt:#eaf0ff;--muted:#9eacc7;--blue:#3478df;--gold:#ffd166;--green:#54d6a0}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 500px at 10% 0%,#1c2d50,transparent 65%),var(--bg);color:var(--txt);font:15px/1.5 system-ui,Segoe UI,Arial,sans-serif}.app{max-width:1400px;margin:auto;padding:24px}
+header{display:flex;justify-content:space-between;gap:15px;align-items:start;margin-bottom:18px}h1{font-size:clamp(25px,4vw,36px);margin:0 0 6px}.sub{color:var(--muted);margin:0}.tag{border:1px solid #31527c;background:#142641;color:#b9d8ff;padding:6px 11px;border-radius:30px;font-size:12px;white-space:nowrap}
+.toolbar,.panel{background:linear-gradient(180deg,#1a2640,#121b2e);border:1px solid var(--line);border-radius:15px;box-shadow:0 12px 32px #0004}.toolbar{padding:14px;display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}input{width:90px;background:#0b1425;color:var(--txt);border:1px solid #405273;border-radius:9px;padding:9px}button{background:#1d2d49;color:var(--txt);border:1px solid #405273;border-radius:9px;padding:9px 13px;font-weight:650;cursor:pointer}button:hover:not(:disabled){border-color:#80b4ff;background:#263c60}button:disabled{opacity:.35;cursor:not-allowed}.primary{background:#2865c5;border-color:#4385ed}.status{margin-left:auto;color:var(--muted);font-size:13px}.progress{height:5px;background:#293751;border-radius:10px;overflow:hidden;margin-bottom:15px}.progress div{height:100%;background:linear-gradient(90deg,#438ef0,#54d6a0);width:0}
+.layout{display:grid;grid-template-columns:1.04fr 1fr;gap:15px;align-items:start}.panel{padding:16px;min-width:0}.panel h2{font-size:16px;margin:0 0 12px;display:flex;justify-content:space-between}.kicker{font-size:11px;color:var(--muted);letter-spacing:.8px}.step{font-size:20px;font-weight:750;margin-bottom:4px}.explain{color:#c5d1e8;min-height:48px;margin:0 0 14px}.section{margin-top:15px}.label{font-size:12px;color:var(--muted);font-weight:750;letter-spacing:.7px;margin-bottom:7px}
+.chars,.calls,.results{display:flex;gap:7px;flex-wrap:wrap;min-height:40px}.char{width:35px;height:42px;display:grid;place-items:center;background:#123c33;border:1px solid #2c8c6a;color:#b5f3d6;border-radius:8px;font:800 24px monospace}.empty{color:#8493ad;border:1px dashed #40506d;padding:7px 10px;border-radius:8px}.call{background:#15243c;border:1px solid #405477;border-radius:8px;padding:7px 9px;font:12px monospace}.call.active{border-color:#d5a93f;background:#3a301c;color:#ffe4a0}.result{background:#12352f;border:1px solid #2f795f;color:#b8f4d9;border-radius:8px;padding:7px 10px;font:13px monospace}
+.counters,.vars{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.metric,.var{background:#0e1729;border:1px solid #2c3a55;border-radius:9px;padding:9px;min-width:0}.metric small,.var small{display:block;color:var(--muted);font-size:11px}.metric strong{font-size:20px}.vars{grid-template-columns:repeat(2,1fr)}.var strong{font:13px monospace;overflow-wrap:anywhere}
+.code{background:#091120;border:1px solid #293956;border-radius:10px;overflow:auto;max-height:650px;padding:8px 0}.line{display:flex;gap:12px;padding:3px 12px;white-space:pre;font:13px/1.65 ui-monospace,Consolas,monospace;color:#cbd7ed}.ln{width:18px;text-align:right;color:#687b9b;flex:none}.line.current{background:#173a67;border-left:3px solid var(--gold);padding-left:9px;color:white}.line.current .ln{color:var(--gold);font-weight:bold}
+.why{margin-top:13px;padding:11px 13px;border-left:3px solid var(--gold);background:#302a1b;border-radius:0 8px 8px 0;color:#f5e6bd}.why b{display:block;color:var(--gold);font-size:11px;margin-bottom:3px}.foot{text-align:center;color:var(--muted);font-size:12px;margin-top:16px}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.status{width:100%;margin:0}}@media(max-width:520px){.app{padding:14px}.panel{padding:12px}.counters{grid-template-columns:1fr 1fr}}
+</style></head><body><div class="app">
+<header><div><h1>DSA Step Visualizer</h1><p class="sub">Generate Parentheses — trace the stack, open/close counters, recursion calls and Python code together.</p></div><span class="tag">LEETCODE 22</span></header>
+<div class="toolbar"><div><label for="n">Number of pairs · n (1–5)</label><input id="n" type="number" min="1" max="5" value="3"></div><button class="primary" id="run">Run / Apply n</button><button id="prev">← Previous</button><button class="primary" id="next">Next step →</button><button id="reset">↺ Reset</button><span class="status" id="counter"></span></div>
+<div class="progress"><div id="bar"></div></div>
+<main class="layout"><section class="panel">
+<h2>Execution state <span class="kicker">LIVE VISUALIZATION</span></h2><div class="step" id="title"></div><p class="explain" id="explain"></p>
+<div class="section"><div class="label">CHARACTER STACK · stack</div><div class="chars" id="chars"></div></div>
+<div class="section"><div class="label">OPEN / CLOSE COUNTERS</div><div class="counters"><div class="metric"><small>Open used · openN</small><strong id="open"></strong></div><div class="metric"><small>Close used · closedN</small><strong id="close"></strong></div><div class="metric"><small>Pair limit · n</small><strong id="limit"></strong></div></div></div>
+<div class="section"><div class="label">RECURSION CALL STACK · OLDEST → NEWEST</div><div class="calls" id="calls"></div></div>
+<div class="section"><div class="label">COMPLETED VALID STRINGS · res</div><div class="results" id="results"></div></div>
+<div class="section counters"><div class="metric"><small>Current string</small><strong id="current">""</strong></div><div class="metric"><small>Characters placed</small><strong id="length">0</strong></div><div class="metric"><small>Results saved</small><strong id="saved">0</strong></div></div>
+</section><section class="panel">
+<h2>Python code <span class="kicker">CURRENT LINE HIGHLIGHTED</span></h2><div class="code" id="code"></div>
+<div class="why"><b>WHY THIS LINE MATTERS</b><span id="why"></span></div>
+<div class="section"><div class="label">VARIABLES AT THIS EXACT MOMENT</div><div class="vars"><div class="var"><small>openN</small><strong id="vopen"></strong></div><div class="var"><small>closedN</small><strong id="vclose"></strong></div><div class="var"><small>stack</small><strong id="vstack"></strong></div><div class="var"><small>res length</small><strong id="vres"></strong></div></div></div>
+</section></main><p class="foot">Runs locally in your browser. No Python installation, server, API key or external library required.</p></div>
+<script>
+const SRC=[
+"class Solution:",
+"    def generateParenthesis(self, n: int) -> List[str]:",
+"        # only add '(' if openN < n",
+"        # only add ')' if closedN < openN",
+"        # valid when openN == closedN == n",
+"",
+"        stack = []",
+"        res = []",
+"",
+"        def backtrack(openN, closedN):",
+"            if openN == closedN == n:",
+"                res.append(''.join(stack))",
+"                return",
+"",
+"            if openN < n:",
+"                stack.append('(')",
+"                backtrack(openN + 1, closedN)",
+"                stack.pop()",
+"",
+"            if closedN < openN:",
+"                stack.append(')')",
+"                backtrack(openN, closedN + 1)",
+"                stack.pop()",
+"",
+"        backtrack(0, 0)",
+"        return res"
+];
+let events=[],idx=0;const $=id=>document.getElementById(id);
+const pyStack=a=>"["+a.map(x=>"'"+x+"'").join(", ")+"]";
+function makeTrace(n){
+ const path=[],res=[],frames=[],out=[];
+ function snap(line,title,explanation,o,c){out.push({line,title,explanation,n,path:[...path],res:[...res],o,c,frames:frames.map((f,i)=>({s:f,active:i===frames.length-1}))});}
+ snap(7,"Initialize character stack","Create an empty list. Each decision will push one parenthesis character.",0,0);
+ snap(8,"Initialize results","Create an empty list to collect complete valid strings.",0,0);
+ snap(10,"Define backtracking function","Define backtrack(openN, closedN). The counters record how many opening and closing brackets have been placed.",0,0);
+ snap(25,"Start recursion","Call backtrack(0, 0). No parentheses have been placed yet.",0,0);
+ function dfs(o,c){
+  frames.push(`backtrack(${o}, ${c})`);
+  snap(10,"Enter recursive call",`Enter backtrack(${o}, ${c}) with path ${pyStack(path)}.`,o,c);
+  snap(11,"Check completion condition",`Is openN == closedN == n? ${o} == ${c} == ${n} is ${o===c&&c===n}.`,o,c);
+  if(o===n&&c===n){let s=path.join("");res.push(s);snap(12,"Save completed string",`The path is balanced and has ${n} pairs. Join stack to "${s}" and append it to res.`,o,c);snap(13,"Return from completed branch","This completed branch returns to its parent. The parent will undo the character it added.",o,c);frames.pop();return;}
+  snap(15,"Check whether '(' is allowed",`Opening is allowed only if openN < n. Here ${o} < ${n} is ${o<n}.`,o,c);
+  if(o<n){path.push("(");snap(16,"Push '(' onto stack",`Append '(' to the path. stack = ${pyStack(path)}.`,o,c);snap(17,"Recurse after adding '('",`Call backtrack(${o+1}, ${c}) to place the remaining characters.`,o,c);dfs(o+1,c);snap(18,"Pop '(' during backtracking","The child returned. Remove the '(' added by this call, restoring the path before this branch.",o,c);path.pop();}
+  snap(20,"Check whether ')' is allowed",`Closing is allowed only if closedN < openN. Here ${c} < ${o} is ${c<o}.`,o,c);
+  if(c<o){path.push(")");snap(21,"Push ')' onto stack",`Append ')' to the path. stack = ${pyStack(path)}.`,o,c);snap(22,"Recurse after adding ')'",`Call backtrack(${o}, ${c+1}) to place another closing parenthesis.`,o,c);dfs(o,c+1);snap(23,"Pop ')' during backtracking","The child returned. Remove the ')' added by this call, restoring the previous path.",o,c);path.pop();}
+  snap(25,"Return after exploring choices","This call has tried every allowed choice. It reaches the end of the function and returns implicitly to its caller.",o,c);frames.pop();
+ }
+ dfs(0,0);snap(26,"Return final results",`All branches are complete. Return ${res.length} valid strings.`,0,0);return out;
+}
+function renderCode(line){$("code").innerHTML="";SRC.forEach((s,i)=>{let d=document.createElement("div");d.className="line"+(i+1===line?" current":"");let no=document.createElement("span");no.className="ln";no.textContent=i+1;let txt=document.createElement("span");txt.textContent=s||" ";d.append(no,txt);$("code").append(d);if(i+1===line)d.scrollIntoView({block:"nearest"});});}
+function render(){
+ let e=events[idx];$("title").textContent=e.title;$("explain").textContent=e.explanation;$("why").textContent=e.explanation;
+ $("chars").innerHTML="";if(!e.path.length){let x=document.createElement("span");x.className="empty";x.textContent="Empty stack []";$("chars").append(x);}else e.path.forEach(ch=>{let x=document.createElement("span");x.className="char";x.textContent=ch;$("chars").append(x);});
+ $("calls").innerHTML="";if(!e.frames.length){let x=document.createElement("span");x.className="empty";x.textContent="No active recursive calls";$("calls").append(x);}else e.frames.forEach(f=>{let x=document.createElement("span");x.className="call"+(f.active?" active":"");x.textContent=f.s;$("calls").append(x);});
+ $("results").innerHTML="";if(!e.res.length){let x=document.createElement("span");x.className="empty";x.textContent="No completed strings yet";$("results").append(x);}else e.res.forEach((s,i)=>{let x=document.createElement("span");x.className="result";x.textContent=`${i+1}. "${s}"`;$("results").append(x);});
+ $("open").textContent=e.o;$("close").textContent=e.c;$("limit").textContent=e.n;$("current").textContent='"'+e.path.join("")+'"';$("length").textContent=e.path.length;$("saved").textContent=e.res.length;
+ $("vopen").textContent=e.o;$("vclose").textContent=e.c;$("vstack").textContent=pyStack(e.path);$("vres").textContent=e.res.length;
+ renderCode(e.line);$("counter").textContent=`Step ${idx+1} / ${events.length}`;$("bar").style.width=((idx+1)/events.length*100)+"%";$("prev").disabled=idx===0;$("next").disabled=idx===events.length-1;
+}
+function build(){let n=Number($("n").value);if(!Number.isInteger(n)||n<1||n>5){alert("Choose n from 1 to 5 for a readable trace.");return;}events=makeTrace(n);idx=0;render();}
+$("prev").onclick=()=>{if(idx>0){idx--;render();}};$("next").onclick=()=>{if(idx<events.length-1){idx++;render();}};$("reset").onclick=()=>{idx=0;render();};$("run").onclick=build;$("n").onkeydown=e=>{if(e.key==="Enter")build();};build();
+</script></body></html>
