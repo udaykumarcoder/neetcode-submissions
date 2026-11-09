@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Partition to K Equal Sum Subsets Visualizer</title>
+<style>
+:root{--bg:#0b1020;--panel:#17233b;--line:#30415f;--txt:#eaf0ff;--muted:#9eacc7;--gold:#ffd166;--green:#54d6a0}*{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 500px at 10% 0%,#1c2d50,transparent 65%),var(--bg);color:var(--txt);font:15px/1.5 system-ui,Arial}.app{max-width:1450px;margin:auto;padding:22px}h1{font-size:clamp(25px,4vw,36px);margin:0 0 5px}.sub{color:var(--muted);margin:0 0 18px}.bar,.panel{background:linear-gradient(#1a2640,#121b2e);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 30px #0004}.bar{padding:13px;display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin-bottom:13px}label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}input{background:#0b1425;color:var(--txt);border:1px solid #405273;border-radius:8px;padding:9px}#nums{width:320px;max-width:65vw}#k{width:70px}button{background:#1d2d49;color:var(--txt);border:1px solid #405273;border-radius:8px;padding:9px 12px;cursor:pointer;font-weight:650}button:disabled{opacity:.35;cursor:not-allowed}.primary{background:#2865c5;border-color:#4385ed}.status{margin-left:auto;color:var(--muted);font-size:13px}.progress{height:5px;background:#293751;border-radius:9px;overflow:hidden;margin-bottom:14px}.progress>div{height:100%;background:linear-gradient(90deg,#438ef0,#54d6a0);width:0}.layout{display:grid;grid-template-columns:1.05fr 1fr;gap:14px;align-items:start}.panel{padding:15px;min-width:0}.head{display:flex;justify-content:space-between;font-weight:750;margin-bottom:12px}.muted{font-size:11px;color:var(--muted);letter-spacing:.7px}.step{font-size:20px;font-weight:750}.explain{color:#c5d1e8;min-height:52px;margin:4px 0 12px}.sec{margin-top:14px}.lbl{font-size:12px;color:var(--muted);font-weight:750;letter-spacing:.7px;margin-bottom:6px}.items{display:flex;gap:6px;flex-wrap:wrap;min-height:36px}.num{min-width:42px;text-align:center;padding:7px 9px;border-radius:8px;background:#243b5f;border:1px solid #4d78ae;font-weight:800}.num.active{border:2px solid var(--gold);background:#44371d}.num.used{background:#174b3b;border-color:#2d9b70;color:#c2f8df}.num small{display:block;font-size:10px;color:#a8bad5;font-weight:400}.groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.group{background:#0f192b;border:1px solid #354866;border-radius:10px;padding:9px;min-width:0}.group.current{border:2px solid var(--gold);background:#332b1c}.group.done{border-color:#27865f}.ghead{display:flex;justify-content:space-between;font-weight:750}.ghead small,.gfoot{color:var(--muted);font-size:11px;font-weight:400}.pieces{display:flex;gap:4px;flex-wrap:wrap;margin:7px 0;min-height:25px}.piece{background:#1c4774;border:1px solid #4c83bc;border-radius:5px;padding:3px 6px;font:12px monospace}.call,.action{background:#15243c;border:1px solid #405477;border-radius:7px;padding:6px 8px;font:12px monospace}.call.current,.action.current{border-color:var(--gold);background:#3a301c;color:#ffe4a0}.action.undo{border-color:#a65d68;background:#39212a;color:#ffc2ca}.action.good{border-color:#2c8d6b;background:#15382f;color:#baf2d8}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.metric,.var{background:#0e1729;border:1px solid #2c3a55;border-radius:8px;padding:8px;min-width:0}.metric small,.var small{display:block;color:var(--muted);font-size:11px}.metric strong{font-size:17px}.vars{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.var strong{font:13px monospace;overflow-wrap:anywhere}.code{background:#091120;border:1px solid #293956;border-radius:9px;overflow:auto;max-height:720px;padding:7px 0}.line{display:flex;gap:11px;padding:3px 11px;white-space:pre;font:13px/1.65 ui-monospace,Consolas,monospace;color:#cbd7ed}.ln{width:18px;text-align:right;color:#687b9b;flex:none}.line.active{background:#173a67;border-left:3px solid var(--gold);padding-left:8px;color:white}.line.active .ln{color:var(--gold);font-weight:bold}.why{margin-top:10px;padding:10px 12px;border-left:3px solid var(--gold);background:#302a1b;border-radius:0 8px 8px 0;color:#f5e6bd}.why b{display:block;color:var(--gold);font-size:11px}.note{padding:11px 13px;border-radius:9px;background:#122c45;border:1px solid #31577b;margin-top:12px;color:#d7eaff}.note b{color:#9bc9ff}.foot{text-align:center;color:var(--muted);font-size:12px;margin-top:15px}@media(max-width:900px){.layout{grid-template-columns:1fr}.status{width:100%;margin:0}}@media(max-width:520px){.app{padding:12px}.metrics{grid-template-columns:1fr 1fr}.groups{grid-template-columns:1fr}}
+</style></head><body><div class="app">
+<h1>Partition to K Equal Sum Subsets</h1><p class="sub">LeetCode 698 · Visualize used[], subsetSum, completed groups, recursion and backtracking.</p>
+<div class="bar"><div><label for="nums">Numbers · comma-separated</label><input id="nums" value="4,3,2,3,5,2,1"></div><div><label for="k">Number of subsets · k</label><input id="k" type="number" min="1" value="4"></div><button class="primary" id="run">Run / Apply input</button><button id="prev">← Previous</button><button class="primary" id="next">Next step →</button><button id="reset">↺ Reset</button><span class="status" id="counter"></span></div>
+<div class="progress"><div id="fill"></div></div>
+<div class="layout"><section class="panel">
+<div class="head">Execution state <span class="muted">LIVE VISUALIZATION</span></div><div class="step" id="title"></div><p class="explain" id="explain"></p>
+<div class="sec"><div class="lbl">INPUT NUMBERS · INDEX / USED STATUS</div><div class="items" id="numbers"></div></div>
+<div class="sec"><div class="lbl">SUBSETS BEING FORMED</div><div class="groups" id="groups"></div></div>
+<div class="sec"><div class="lbl">RECURSION CALL STACK · OLDEST → NEWEST</div><div class="items" id="calls"></div></div>
+<div class="sec"><div class="lbl">LATEST ACTION</div><div class="items" id="action"></div></div>
+<div class="sec metrics"><div class="metric"><small>Current index · i</small><strong id="mi">—</strong></div><div class="metric"><small>Loop index · j</small><strong id="mj">—</strong></div><div class="metric"><small>Current number</small><strong id="mn">—</strong></div></div>
+<div class="sec metrics"><div class="metric"><small>Current subset sum</small><strong id="sum">0</strong></div><div class="metric"><small>Target sum</small><strong id="target">—</strong></div><div class="metric"><small>Subsets remaining · k</small><strong id="kr">—</strong></div></div>
+</section><section class="panel">
+<div class="head">Python code <span class="muted">CURRENT LINE HIGHLIGHTED</span></div><div class="code" id="code"></div><div class="why"><b>WHY THIS LINE MATTERS</b><span id="why"></span></div>
+<div class="sec"><div class="lbl">VARIABLES AT THIS EXACT MOMENT</div><div class="vars"><div class="var"><small>i</small><strong id="vi"></strong></div><div class="var"><small>j</small><strong id="vj"></strong></div><div class="var"><small>k</small><strong id="vk"></strong></div><div class="var"><small>subsetSum</small><strong id="vsum"></strong></div><div class="var"><small>used</small><strong id="vused"></strong></div><div class="var"><small>target</small><strong id="vtarget"></strong></div></div></div>
+<div class="note"><b>Mental model:</b> used[j] = True reserves a number for the current attempt. If that attempt fails, used[j] = False releases it so another combination can try it.</div>
+</section></div><p class="foot">Runs locally in your browser. No Python installation, server, API key or external library required. Use small inputs for a readable trace.</p></div>
+<script>
+const SRC=[
+"class Solution:",
+"    def canPartitionKSubsets(self, nums: List[int], k: int) -> bool:",
+"        target = sum(nums) / k",
+"        used = [False] * len(nums)",
+"",
+"        def backtrack(i, k, subsetSum):",
+"            if k == 0:",
+"                return True",
+"",
+"            if subsetSum == target:",
+"                return backtrack(0, k - 1, 0)",
+"",
+"            for j in range(i, len(nums)):",
+"                if used[j] or subsetSum + nums[j] > target:",
+"                    continue",
+"                used[j] = True",
+"                if backtrack(j + 1, k, subsetSum + nums[j]):",
+"                    return True",
+"                used[j] = False",
+"            return False",
+"",
+"        return backtrack(0, k, 0)"
+];
+let trace=[],step=0;const $=id=>document.getElementById(id),fmt=a=>"["+a.join(", ")+"]";
+function makeTrace(nums,k){
+ const total=nums.reduce((a,b)=>a+b,0),target=total/k,used=nums.map(()=>false),groups=[],current=[],frames=[],ev=[];
+ function snap(line,title,desc,x={}){ev.push({line,title,desc,nums:[...nums],used:[...used],groups:groups.map(g=>[...g]),current:[...current],frames:frames.map((v,n)=>({v,active:n===frames.length-1})),i:x.i??null,j:x.j??null,k:x.k??k,sum:x.sum??0,action:x.action??"",kind:x.kind??"",ret:x.ret??"—",target,total,answer:x.answer??null});}
+ snap(3,"Calculate target sum",`Total = ${total}. We need ${k} equal subsets, so target = ${total} / ${k} = ${target}.`);
+ snap(4,"Initialize used array",`Create ${nums.length} False values. used[index] tells us whether nums[index] has already been assigned to a subset.`);
+ function dfs(i,left,sum){
+  frames.push(`backtrack(${i}, ${left}, ${sum})`);snap(6,"Enter recursive call",`Enter backtrack(${i}, ${left}, ${sum}). We are building one of the remaining ${left} subsets.`,{i,k:left,sum});
+  snap(7,"Check base case",`Is k == 0? ${left} == 0 is ${left===0}.`,{i,k:left,sum});
+  if(left===0){snap(8,"All subsets completed — return True","Every required subset reached the target. The array has been partitioned successfully.",{i,k:left,sum,ret:"True",answer:true});frames.pop();return true;}
+  snap(9,"Check whether this subset is complete",`Is subsetSum == target? ${sum} == ${target} is ${sum===target}.`,{i,k:left,sum});
+  if(sum===target){
+   const done=[...current];groups.push(done);current.length=0;
+   snap(10,"Complete this subset; start the next one",`We formed ${fmt(done)} with sum ${target}. Call backtrack(0, ${left-1}, 0). Used numbers remain reserved.`,{i:0,k:left-1,sum:0,action:`Completed ${fmt(done)}`,kind:"complete"});
+   const ok=dfs(0,left-1,0);
+   if(ok){snap(10,"Remaining subsets succeeded — return True","All remaining subsets were formed. Keep the successful choices and propagate True.",{i,k:left,sum,ret:"True",answer:true,action:"Keep completed subsets",kind:"success"});frames.pop();return true;}
+   const restore=groups.pop();current.push(...restore);
+   snap(10,"Next subset failed — restore previous subset",`The recursive attempt returned False. Restore ${fmt(restore)} so its selected numbers can be undone by the caller.`,{i,k:left,sum,ret:"False",action:`Restore ${fmt(restore)}`,kind:"undo"});
+   frames.pop();return false;
+  }
+  for(let j=i;j<nums.length;j++){
+   snap(12,"Try candidate index j",`The loop tries j=${j}; nums[${j}] = ${nums[j]}.`,{i,j,k:left,sum,action:`Try nums[${j}] = ${nums[j]}`,kind:"try"});
+   if(used[j]||sum+nums[j]>target){snap(13,used[j]?"Skip: number already used":"Skip: adding it exceeds target",used[j]?`used[${j}] is True. This number already belongs to another subset.`:`${sum} + ${nums[j]} = ${sum+nums[j]}, greater than ${target}. Skip it.`,{i,j,k:left,sum,action:used[j]?"Already used": "Would exceed target",kind:"skip"});continue;}
+   used[j]=true;current.push(nums[j]);
+   snap(15,"Make the choice: mark number used",`Execute used[${j}] = True. Add ${nums[j]} to the current subset.`,{i,j,k:left,sum,action:`Reserve nums[${j}] = ${nums[j]}`,kind:"choose"});
+   snap(16,"Explore this choice recursively",`Call backtrack(${j+1}, ${left}, ${sum+nums[j]}). The selected number stays reserved while the child explores.`,{i,j,k:left,sum,action:"Explore deeper",kind:"recurse"});
+   const ok=dfs(j+1,left,sum+nums[j]);
+   if(ok){snap(17,"Child returned True — keep the choice","A complete partition was found. Return True without undoing a successful choice.",{i,j,k:left,sum,ret:"True",answer:true,action:`Keep ${nums[j]} reserved`,kind:"success"});frames.pop();return true;}
+   snap(18,"Child returned False — undo the choice",`Execute used[${j}] = False. Release ${nums[j]} and remove it from the current subset so another combination can try it.`,{i,j,k:left,sum,ret:"False",action:`Release nums[${j}] = ${nums[j]}`,kind:"undo"});
+   used[j]=false;current.pop();
+   snap(18,"Choice undone — state restored",`used[${j}] is False again. Current subset is restored to ${fmt(current)}. The loop can try its next j.`,{i,j,k:left,sum,ret:"False",action:`${nums[j]} is available again`,kind:"undone"});
+  }
+  snap(19,"No candidate worked — return False","Every remaining index was tried. This partial subset cannot lead to a solution, so return False to the caller.",{i,k:left,sum,ret:"False",action:"Return False to parent",kind:"return"});frames.pop();return false;
+ }
+ const answer=dfs(0,k,0);snap(21,"Return final result",`The algorithm finished. Result = ${answer}.`,{i:0,k,sum:0,answer,ret:String(answer),action:answer?"All subsets formed":"No valid partition",kind:"final"});return ev;
+}
+function renderCode(line){$("code").innerHTML="";SRC.forEach((s,n)=>{const d=document.createElement("div");d.className="line"+(n+1===line?" active":"");const num=document.createElement("span");num.className="ln";num.textContent=n+1;const txt=document.createElement("span");txt.textContent=s||" ";d.append(num,txt);$("code").append(d);if(n+1===line)d.scrollIntoView({block:"nearest"});});}
+function render(){
+ const e=trace[step];$("title").textContent=e.title;$("explain").textContent=e.desc;$("why").textContent=e.desc;
+ $("numbers").innerHTML="";e.nums.forEach((v,n)=>{const d=document.createElement("div");d.className="num"+(e.i===n?" active":"")+(e.used[n]?" used":"");d.innerHTML=`${v}<small>index ${n} · ${e.used[n]?"USED":"free"}</small>`;$("numbers").append(d);});
+ $("groups").innerHTML="";e.groups.forEach((g,n)=>{const d=document.createElement("div");d.className="group done";d.innerHTML=`<div class="ghead"><span>Completed subset ${n+1}</span><small>sum = ${g.reduce((a,b)=>a+b,0)}</small></div><div class="pieces">${g.map(v=>`<span class="piece">${v}</span>`).join("")}</div><div class="gfoot">Target reached</div>`;$("groups").append(d);});
+ const d=document.createElement("div");d.className="group current";d.innerHTML=`<div class="ghead"><span>Current subset</span><small>${e.sum} / ${e.target}</small></div><div class="pieces">${e.current.map(v=>`<span class="piece">${v}</span>`).join("")||'<span class="gfoot">No numbers selected</span>'}</div><div class="gfoot">${e.target-e.sum} remaining</div>`;$("groups").append(d);
+ $("calls").innerHTML="";if(!e.frames.length){const x=document.createElement("span");x.className="gfoot";x.textContent="No active recursive calls";$("calls").append(x);}else e.frames.forEach(f=>{const x=document.createElement("span");x.className="call"+(f.active?" current":"");x.textContent=f.v;$("calls").append(x);});
+ $("action").innerHTML="";if(!e.action){const x=document.createElement("span");x.className="gfoot";x.textContent="No action yet";$("action").append(x);}else{const x=document.createElement("span");x.className="action"+(["undo","undone"].includes(e.kind)?" undo":["choose","success","complete"].includes(e.kind)?" good":"")+(e.kind==="try"?" current":"");x.textContent=e.action;$("action").append(x);}
+ $("mi").textContent=e.i??"—";$("mj").textContent=e.j??"—";$("mn").textContent=e.j===null?"—":e.nums[e.j]??"—";$("sum").textContent=e.sum;$("target").textContent=e.target;$("kr").textContent=e.k;
+ $("vi").textContent=e.i??"—";$("vj").textContent=e.j??"—";$("vk").textContent=e.k;$("vsum").textContent=e.sum;$("vused").textContent=fmt(e.used.map(v=>v?"T":"F"));$("vtarget").textContent=e.target;
+ renderCode(e.line);$("counter").textContent=`Step ${step+1} / ${trace.length}`;$("fill").style.width=(step+1)/trace.length*100+"%";$("prev").disabled=step===0;$("next").disabled=step===trace.length-1;
+}
+function apply(){const nums=$("nums").value.trim().split(",").map(x=>x.trim()).filter(Boolean).map(Number),k=Number($("k").value);if(!nums.length||nums.some(x=>!Number.isInteger(x)||x<=0)){alert("Enter positive integers separated by commas.");return;}if(!Number.isInteger(k)||k<1||k>nums.length){alert("k must be between 1 and the number of values.");return;}if(nums.length>12){alert("Use 12 or fewer numbers for a readable trace.");return;}const sum=nums.reduce((a,b)=>a+b,0);if(sum%k){alert("The total must be divisible by k.");return;}trace=makeTrace(nums,k);step=0;render();}
+$("prev").onclick=()=>{if(step){step--;render();}};$("next").onclick=()=>{if(step<trace.length-1){step++;render();}};$("reset").onclick=()=>{step=0;render();};$("run").onclick=apply;$("nums").onkeydown=e=>{if(e.key==="Enter")apply();};$("k").onkeydown=e=>{if(e.key==="Enter")apply();};apply();
+</script></body></html>
