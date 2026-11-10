@@ -1,0 +1,43 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Perfect Squares DP Visualizer</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--p:#142039;--p2:#20304a;--bd:#354965;--t:#edf3ff;--m:#aab8ce;--y:#ffd166;--g:#52d6a3;--b:#75b7ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:15px/1.5 system-ui}main{max-width:1200px;margin:24px auto;padding:0 16px 35px}h1{font-size:clamp(24px,4vw,35px);margin:0}h2{font-size:18px;margin:0 0 12px}.muted,.small{color:var(--m)}.top{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:18px 0}.top label{display:block;color:var(--m);font-size:13px}.top input{display:block;margin-top:4px;background:#081321;color:white;border:1px solid var(--bd);border-radius:9px;padding:10px;font:17px monospace;width:110px}.btn{border:1px solid var(--bd);border-radius:9px;padding:10px 14px;background:#294263;color:white;font-weight:700;cursor:pointer}.primary{background:#17634e}.btn:disabled{opacity:.3}.layout{display:grid;grid-template-columns:1fr 1.08fr;gap:15px}.panel{background:var(--p);border:1px solid var(--bd);border-radius:15px;padding:17px;min-width:0}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.stat{background:var(--p2);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center}.stat strong{display:block;color:var(--m);font-size:11px;text-transform:uppercase}.stat b{font-size:23px}.yellow{color:var(--y)}.blue{color:var(--b)}.green{color:var(--g)}.tiles{display:flex;gap:5px;flex-wrap:wrap;margin:12px 0 20px}.tile{min-width:40px;padding:7px 5px;text-align:center;background:var(--p2);border:1px solid var(--bd);border-radius:8px;font:12px monospace}.tile.active{border:2px solid var(--y)}.tile.source{border:2px solid var(--b)}.explain{background:var(--p2);border-radius:10px;padding:13px;min-height:100px;margin-top:12px}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.code{background:#080e19;border:1px solid var(--bd);border-radius:10px;padding:12px;overflow:auto;font:13px/1.9 monospace;white-space:pre}.ln{display:block;padding:0 7px;border-left:3px solid transparent}.ln.on{background:#293f60;border-left-color:var(--y)}.history{max-height:210px;overflow:auto}table{width:100%;border-collapse:collapse}td,th{padding:7px 5px;border-bottom:1px solid var(--bd);text-align:center;font-size:12px}th{color:var(--m)}.result{display:flex;justify-content:space-between;background:#12382f;border:1px solid #287c65;border-radius:10px;padding:12px;margin-top:12px}.result b{font-size:26px;color:var(--g)}.warning{color:#ff9292;min-height:18px}@media(max-width:820px){.layout{grid-template-columns:1fr}}
+</style></head><body><main>
+<h1>Perfect Squares — Dynamic Programming</h1><p class="muted">LeetCode 279 · Follow the target loop, test square numbers, and update the minimum number of squares.</p>
+<div class="top"><div><label for="n">Target n</label><input id="n" type="number" min="1" max="100" value="12"></div><button class="btn primary" id="load">Load / Run</button><span class="small">Example: 12 = 4 + 4 + 4 → 3 squares</span></div><div class="warning" id="warning"></div>
+<div class="layout"><section class="panel"><h2>1. Current target and square</h2><div class="stats"><div class="stat"><strong>target</strong><b id="target" class="yellow">—</b></div><div class="stat"><strong>s</strong><b id="sval" class="blue">—</b></div><div class="stat"><strong>square</strong><b id="sq">—</b></div></div>
+<h2>Perfect squares</h2><div id="squares" class="tiles"></div><h2>DP array — minimum squares needed</h2><div id="dp" class="tiles"></div><div class="explain" id="explain">Press Next Step. dp[x] means the minimum number of perfect squares that add up to x.</div><div class="controls"><button class="btn" id="prev">← Previous</button><button class="btn primary" id="next">Next Step →</button><button class="btn" id="reset">↺ Reset</button></div></section>
+<section class="panel"><h2>2. Exact Python code — highlighted line</h2><div class="code">
+<span class="ln" data-l="1">1  dp = [n] * (n + 1)</span>
+<span class="ln" data-l="2">2  dp[0] = 0</span>
+<span class="ln" data-l="3">3</span>
+<span class="ln" data-l="4">4  for target in range(1, n + 1):</span>
+<span class="ln" data-l="5">5      for s in range(1, target + 1):</span>
+<span class="ln" data-l="6">6          square = s * s</span>
+<span class="ln" data-l="7">7          if target - square &lt; 0:</span>
+<span class="ln" data-l="8">8              break</span>
+<span class="ln" data-l="9">9          dp[target] = min(dp[target],</span>
+<span class="ln" data-l="10">10                         1 + dp[target - square])</span>
+<span class="ln" data-l="11">11 return dp[n]</span></div>
+<h2 style="margin-top:16px">3. Completed DP values</h2><div class="history"><table><thead><tr><th>x</th><th>dp[x]</th><th>Chosen square</th></tr></thead><tbody id="history"></tbody></table></div><div class="result"><span>Minimum squares for n</span><b id="answer">—</b></div></section></div>
+<p class="small" style="margin-top:14px"><b>Mental model:</b> Choose one square s², then solve the smaller remainder target − s². Candidate = 1 + dp[target − square]. Take the minimum. Once square is too large, <code>break</code> because later squares are even larger.</p></main>
+<script>
+let N=12,F=[],step=0;
+function build(n){let dp=Array(n+1).fill(n),chosen=Array(n+1).fill(null),hist=[],frames=[];function snap(line,t,sq,msg,kind){frames.push({line,t,sq,msg,kind,dp:[...dp],chosen:[...chosen],hist:[...hist]})}
+snap(1,null,null,`Initialize dp with ${n} as a safe upper bound for every positive amount.`,"init");dp[0]=0;snap(2,0,null,"Set dp[0] = 0: zero squares are needed to make total zero.","base");
+for(let t=1;t<=n;t++){snap(4,t,null,`Start target = ${t}. Find the fewest perfect squares that sum to ${t}.`,"target");
+for(let s=1;s<=t;s++){let sq=s*s;snap(5,t,sq,`Try s = ${s}. The inner loop tests the square s × s.`,"inner");snap(6,t,sq,`Calculate square = ${s} × ${s} = ${sq}.`,"square");
+if(t-sq<0){snap(7,t,sq,`${t} − ${sq} = ${t-sq}, which is negative. This square is too large.`,"bound");snap(8,t,sq,"break: larger s values only make larger squares, so stop this inner loop.","break");break}
+let rem=t-sq,old=dp[t],candidate=1+dp[rem];snap(9,t,sq,`Use one square ${sq}; remainder = ${t} − ${sq} = ${rem}. Candidate = 1 + dp[${rem}] = 1 + ${dp[rem]} = ${candidate}. Current dp[${t}] = ${old}.`,"calc");
+if(candidate<dp[t]){dp[t]=candidate;chosen[t]=sq}
+snap(10,t,sq,`dp[${t}] = min(${old}, ${candidate}) = ${dp[t]}. ${chosen[t]===sq?"This square improves the best answer.":"Keep the better previous answer."}`,"update")}
+hist.push({x:t,v:dp[t],sq:chosen[t]});snap(4,t,null,`Finished target ${t}: dp[${t}] = ${dp[t]}. Move to the next target.`,"done")}
+snap(11,n,null,`Return dp[${n}] = ${dp[n]}.`,"final");return frames}
+const $=id=>document.getElementById(id);
+function breakdown(x,c){let a=[],guard=0;while(x>0&&c[x]!==null&&guard++<100){a.push(c[x]);x-=c[x]}return a.length?a.join(" + "):"—"}
+function render(){let f=F[step];$("target").textContent=f.t===null?"—":f.t;$("sval").textContent=f.sq===null?"—":Math.sqrt(f.sq);$("sq").textContent=f.sq===null?"—":f.sq;
+$("squares").innerHTML=Array.from({length:Math.floor(Math.sqrt(N))},(_,i)=>{let q=(i+1)**2;return `<span class="tile ${q===f.sq?"source":""}">${i+1}² = ${q}</span>`}).join("");
+$("dp").innerHTML=f.dp.map((v,i)=>`<span class="tile ${i===f.t?"active":""}">${i}<br><b>${v}</b></span>`).join("");$("explain").textContent=f.msg;document.querySelectorAll(".ln").forEach(e=>e.classList.toggle("on",+e.dataset.l===f.line));
+$("history").innerHTML=f.hist.map(x=>`<tr><td>${x.x}</td><td>${x.v}</td><td>${breakdown(x.x,f.chosen)}</td></tr>`).join("");$("answer").textContent=f.kind==="final"?f.dp[N]:"—";$("prev").disabled=step===0;$("next").disabled=step===F.length-1}
+function load(){let n=Number($("n").value),w=$("warning");if(!Number.isInteger(n)||n<1||n>100){w.textContent="Enter an integer from 1 to 100.";return}N=n;w.textContent="";F=build(N);step=0;render()}
+$("load").onclick=load;$("next").onclick=()=>{if(step<F.length-1){step++;render()}};$("prev").onclick=()=>{if(step>0){step--;render()}};$("reset").onclick=()=>{step=0;render()};load();
+</script></body></html>
