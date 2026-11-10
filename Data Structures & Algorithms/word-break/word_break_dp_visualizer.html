@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Word Break — Bottom-Up DP Visualizer</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--p:#142039;--p2:#20304a;--bd:#354965;--t:#edf3ff;--m:#aab8ce;--y:#ffd166;--g:#52d6a3;--b:#75b7ff;--r:#ff9292}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1220px;margin:25px auto;padding:0 17px 36px}h1{font-size:clamp(24px,4vw,35px);margin:0}h2{font-size:18px;margin:0 0 12px}.muted,.small{color:var(--m)}
+.top{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:18px 0}.field label{display:block;color:var(--m);font-size:13px}.field input{display:block;margin-top:4px;background:#081321;color:white;border:1px solid var(--bd);border-radius:9px;padding:10px;font:15px ui-monospace,monospace}.field .sinput{width:230px}.field .winput{width:340px}.btn{border:1px solid var(--bd);border-radius:9px;padding:10px 14px;background:#294263;color:white;font-weight:700;cursor:pointer}.primary{background:#17634e}.btn:disabled{opacity:.3}.warning{color:var(--r);font-size:13px;min-height:18px}
+.layout{display:grid;grid-template-columns:1fr 1.08fr;gap:15px;align-items:start}.panel{background:var(--p);border:1px solid var(--bd);border-radius:15px;padding:17px;min-width:0}
+.string{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 23px}.char{width:39px;height:45px;display:grid;place-items:center;background:var(--p2);border:1px solid var(--bd);border-radius:8px;font-size:20px;font-weight:800;position:relative}.char.active{border:2px solid var(--y);background:#40351b}.char.range{border-color:var(--b);background:#19334e}.char.good{border-color:var(--g)}.char small{position:absolute;bottom:-19px;color:var(--m);font-size:10px;font-weight:400}
+.words{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 15px}.word{background:var(--p2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font:13px ui-monospace,monospace}.word.try{border-color:var(--y);color:var(--y)}.word.match{border-color:var(--g);color:var(--g)}
+.dpgrid{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0}.dpitem{min-width:42px;padding:7px 5px;text-align:center;background:var(--p2);border:1px solid var(--bd);border-radius:8px;font:12px ui-monospace,monospace}.dpitem.active{border:2px solid var(--y)}.dpitem.true{background:#12382f;border-color:#287c65;color:var(--g)}.dpitem.false{color:#ffaaaa}
+.explain{background:var(--p2);border-radius:10px;padding:13px;min-height:92px;margin-top:12px}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.code{background:#080e19;border:1px solid var(--bd);border-radius:10px;padding:12px;overflow:auto;font:13px/1.85 ui-monospace,monospace;white-space:pre}.ln{display:block;padding:0 7px;border-left:3px solid transparent;border-radius:4px}.ln.on{background:#293f60;border-left-color:var(--y);color:white}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.stat{background:var(--p2);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center}.stat strong{display:block;font-size:11px;color:var(--m);text-transform:uppercase}.stat b{font-size:21px}.history{max-height:180px;overflow:auto}.event{padding:7px 3px;border-bottom:1px solid var(--bd);font-size:12px}.result{display:flex;justify-content:space-between;align-items:center;background:#12382f;border:1px solid #287c65;border-radius:10px;padding:12px;margin-top:13px}.result b{font-size:25px;color:var(--g)}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.field .winput{width:min(340px,85vw)}}
+</style></head>
+<body><main>
+<h1>Word Break — Bottom-Up Dynamic Programming</h1>
+<p class="muted">LeetCode 139 · Follow the suffix DP table from right to left, testing each dictionary word at each index.</p>
+<div class="top">
+ <div class="field"><label for="sinput">String s</label><input id="sinput" class="sinput" value="leetcode"></div>
+ <div class="field"><label for="winput">wordDict (comma-separated)</label><input id="winput" class="winput" value="leet, code"></div>
+ <button class="btn primary" id="load">Load / Run</button>
+</div><div class="warning" id="warning"></div>
+<div class="layout">
+<section class="panel">
+<h2>1. String positions</h2><div id="string" class="string"></div>
+<div class="small">Yellow = current starting index i · Blue = substring being checked · Green = confirmed word match</div>
+<h2 style="margin-top:17px">Dictionary words</h2><div id="words" class="words"></div>
+<div class="meta">
+ <div class="stat"><strong>Current i</strong><b id="idx">—</b></div>
+ <div class="stat"><strong>Word w</strong><b id="word">—</b></div>
+ <div class="stat"><strong>dp[i]</strong><b id="value">—</b></div>
+</div>
+<h2>DP array (index → meaning)</h2><div id="dp" class="dpgrid"></div>
+<div class="explain" id="explain">Press Next Step. dp[i] answers: can the suffix s[i:] be split into dictionary words?</div>
+<div class="controls"><button class="btn" id="prev">← Previous</button><button class="btn primary" id="next">Next Step →</button><button class="btn" id="reset">↺ Reset</button></div>
+</section>
+<section class="panel">
+<h2>2. Exact Python code — highlighted line</h2>
+<div class="code">
+<span class="ln" data-l="1">1  dp = [False] * (len(s) + 1)</span>
+<span class="ln" data-l="2">2  dp[len(s)] = True</span>
+<span class="ln" data-l="3">3</span>
+<span class="ln" data-l="4">4  for i in range(len(s) - 1, -1, -1):</span>
+<span class="ln" data-l="5">5      for w in wordDict:</span>
+<span class="ln" data-l="6">6          if (i + len(w) &lt;= len(s) and</span>
+<span class="ln" data-l="7">7              s[i : i + len(w)] == w):</span>
+<span class="ln" data-l="8">8              dp[i] = dp[i + len(w)]</span>
+<span class="ln" data-l="9">9          if dp[i]:</span>
+<span class="ln" data-l="10">10             break</span>
+<span class="ln" data-l="11">11 return dp[0]</span>
+</div>
+<h2 style="margin-top:16px">3. Execution log</h2><div id="events" class="history"></div>
+<div class="result"><span>Can the entire string be segmented?</span><b id="answer">—</b></div>
+</section></div>
+<p class="small" style="margin-top:14px"><b>Mental model:</b> dp[i] is True if some dictionary word starts at i AND the remaining suffix after that word is also segmentable. The empty suffix at dp[len(s)] is True because there is nothing left to decode or split.</p>
+</main>
+<script>
+let s="",dict=[],frames=[],step=0;
+function makeFrames(str,words){
+ const F=[],n=str.length;let dp=Array(n+1).fill(false),events=[];
+ function snap(line,i,w,kind,msg,rangeStart=null,rangeEnd=null){
+  F.push({line,i,w,kind,msg,dp:[...dp],events:[...events],rangeStart,rangeEnd});
+ }
+ dp[n]=true;snap(2,n,"","base",`Set dp[${n}] = True. This is the empty suffix: if no characters remain, the string has been successfully segmented.`);
+ for(let i=n-1;i>=0;i--){
+  snap(4,i,"","outer",`Start at index i = ${i}. We need to determine whether the suffix "${str.slice(i)}" can be segmented.`);
+  for(let w of words){
+   snap(5,i,w,"try",`Try dictionary word "${w}" at index ${i}. Its length is ${w.length}.`);
+   let end=i+w.length,within=end<=n,sub=str.slice(i,end),match=within&&sub===w;
+   snap(6,i,w,"bounds",within?`Bounds check: i + len(w) = ${end} ≤ ${n}, so this slice stays inside s.`:`Bounds check fails: ${end} > ${n}. This word would extend beyond the string.`);
+   if(within){
+    snap(7,i,w,"compare",`Compare s[${i}:${end}] = "${sub}" with word "${w}". ${match?"They match.":"They do not match."}`,i,end);
+    if(match){
+     dp[i]=dp[end];
+     snap(8,i,w,"assign",`The word matches, so set dp[${i}] = dp[${end}] = ${dp[end]}. Matching this word only works if the remaining suffix is also segmentable.`);
+     events.push(`i=${i}: "${w}" matched → dp[${i}] = dp[${end}] (${dp[end]})`);
+    }
+   }
+   snap(9,i,w,"check",`Check dp[${i}] = ${dp[i]}. ${dp[i]?"It is True, so no need to test more words at this index.":"It is False, so try the next dictionary word."}`);
+   if(dp[i]){
+    snap(10,i,w,"break",`dp[${i}] is True. Execute break: stop checking words for this i and move to the next smaller index.`);
+    break;
+   }
+  }
+  events.push(`Finished index ${i}: dp[${i}] = ${dp[i]}`);
+  snap(4,i,"","done",`Finished all needed word checks for index ${i}. dp[${i}] = ${dp[i]}. Now move left to index ${i-1}.`);
+ }
+ snap(11,0,"","final",`Return dp[0] = ${dp[0]}. ${dp[0]?"The entire string can be segmented into dictionary words.":"The entire string cannot be segmented using this dictionary."}`);
+ return F;
+}
+const $=id=>document.getElementById(id);
+function render(){
+ const f=frames[step],n=s.length;
+ $("string").innerHTML=[...s].map((c,i)=>{let cl="char";if(i===f.i)cl+=" active";if(f.rangeStart!==null&&i>=f.rangeStart&&i<f.rangeEnd)cl+=" range";if(f.kind==="assign"&&i>=f.i&&i<f.i+(f.w||"").length)cl+=" good";return `<div class="${cl}">${c}<small>${i}</small></div>`}).join("");
+ $("words").innerHTML=dict.map(w=>`<span class="word ${w===f.w?"try":""}">${w}</span>`).join("");
+ $("idx").textContent=f.i===n?"end":f.i;$("word").textContent=f.w||"—";$("value").textContent=f.i>=0&&f.i<=n?String(f.dp[f.i]):"—";
+ $("dp").innerHTML=f.dp.map((v,i)=>`<div class="dpitem ${i===f.i?"active":""} ${v?"true":"false"}">dp[${i}]<br><b>${v?"T":"F"}</b></div>`).join("");
+ $("explain").textContent=f.msg;document.querySelectorAll(".ln").forEach(el=>el.classList.toggle("on",+el.dataset.l===f.line));
+ $("events").innerHTML=f.events.slice(-8).map(e=>`<div class="event">${e}</div>`).join("")||"No completed word matches yet.";
+ $("answer").textContent=f.kind==="final"?(f.dp[0]?"True":"False"):"—";
+ $("prev").disabled=step===0;$("next").disabled=step===frames.length-1;
+}
+function load(){
+ let sv=$("sinput").value,ws=$("winput").value.split(",").map(x=>x.trim()).filter(Boolean),warn=$("warning");
+ if(!sv){warn.textContent="Enter a non-empty string.";return}
+ if(!ws.length){warn.textContent="Enter at least one dictionary word.";return}
+ if(ws.some(w=>! /^[a-z]+$/.test(w))||!/^[a-z]+$/.test(sv)){warn.textContent="For this visualizer, use lowercase English letters only.";return}
+ s=sv;dict=ws;warn.textContent="";frames=makeFrames(s,dict);step=0;render();
+}
+$("load").onclick=load;$("next").onclick=()=>{if(step<frames.length-1){step++;render()}};$("prev").onclick=()=>{if(step>0){step--;render()}};$("reset").onclick=()=>{step=0;render()};load();
+</script></body></html>
