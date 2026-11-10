@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeetCode 416 — Partition Equal Subset Sum</title>
+<style>
+:root{--bg:#0b1020;--panel:#131b2e;--panel2:#1a2540;--text:#e8eefc;--muted:#9eacc8;--blue:#68a7ff;--green:#53d6a0;--orange:#ffbd69;--red:#ff758f;--border:#2b3855}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,Segoe UI,Arial}
+header{padding:22px 4vw 14px;border-bottom:1px solid var(--border)}h1{font-size:clamp(21px,3vw,30px);margin:0 0 5px}header p{color:var(--muted);margin:0}
+main{max-width:1450px;margin:auto;padding:20px 3vw 40px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.metric,.panel{background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:15px}
+.metric small{display:block;color:var(--muted)}.metric strong{font-size:23px}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+h2{font-size:18px;margin:0 0 12px}.sub{color:var(--muted);font-size:13px;margin-top:-7px}
+.array{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0}
+.num{width:54px;height:54px;border:1px solid var(--border);border-radius:10px;display:grid;place-items:center;background:var(--panel2);font-size:20px;font-weight:700;position:relative}
+.num.active{outline:2px solid var(--orange);background:#44351f}.num.done{border-color:var(--green)}
+.num small{position:absolute;top:55px;font-size:10px;color:var(--muted);font-weight:400}
+.sets{display:flex;gap:7px;flex-wrap:wrap;min-height:48px;margin:10px 0}
+.sum{padding:7px 11px;border-radius:8px;background:#263653;border:1px solid #3c5279;font-weight:700}
+.sum.target{background:#174b3c;border-color:var(--green);color:#a9ffda}
+.sum.new{outline:2px solid var(--orange)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin:10px 0}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.code{background:#090e19;border:1px solid var(--border);border-radius:10px;padding:12px 0;overflow:auto;font:13px/1.75 ui-monospace,SFMono-Regular,Consolas,monospace}
+.line{display:block;padding:0 14px;white-space:pre}.line.active{background:#40341f;border-left:3px solid var(--orange);color:#fff}.ln{display:inline-block;width:25px;color:#687896;user-select:none}
+.explain{background:var(--panel2);border-radius:10px;padding:13px;margin-top:12px;min-height:90px}
+.explain strong{color:var(--orange)}
+.controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:16px 0}
+button{border:0;border-radius:9px;padding:10px 16px;background:#294c7d;color:white;font-weight:700;cursor:pointer}
+button:disabled{opacity:.35;cursor:not-allowed}button.secondary{background:#263148}
+.progress{color:var(--muted);font-size:13px;margin-left:auto}
+.trace{margin-top:16px}.trace table{width:100%;border-collapse:collapse;font-size:13px}.trace th,.trace td{padding:9px;border-bottom:1px solid var(--border);text-align:left}.trace th{color:var(--muted)}
+.final{color:var(--green);font-weight:700}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr}.progress{width:100%;margin:0}}
+</style>
+</head>
+<body>
+<header><h1>Partition Equal Subset Sum — LeetCode 416</h1><p>Step-by-step execution of the set-based dynamic programming solution</p></header>
+<main>
+<div class="summary">
+ <div class="metric"><small>Input array</small><strong>[1, 2, 3, 4]</strong></div>
+ <div class="metric"><small>Total / target</small><strong>10 / 5</strong></div>
+ <div class="metric"><small>Current step</small><strong id="stepMetric">Start</strong></div>
+</div>
+<div class="controls">
+ <button id="prev">← Previous</button><button id="next">Next step →</button><button class="secondary" id="reset">↺ Reset</button>
+ <span class="progress" id="progress">Step 0 of 17</span>
+</div>
+<div class="layout">
+<section class="panel">
+ <h2>1. Data structure — possible sums</h2><p class="sub">The current dp set is shown in sorted order for easy reading.</p>
+ <div><b>Numbers being processed (right to left)</b></div>
+ <div class="array" id="array"></div>
+ <div><b>dp before this number</b><div class="sets" id="before"></div></div>
+ <div><b>nextDP being built</b><div class="sets" id="after"></div></div>
+ <div class="legend"><span><i class="dot" style="background:var(--orange)"></i>Current input</span><span><i class="dot" style="background:var(--green)"></i>Target sum = 5</span><span><i class="dot" style="background:var(--blue)"></i>Possible sum</span></div>
+ <div class="explain" id="explain"></div>
+</section>
+<section class="panel">
+ <h2>2. Exact Python code</h2><p class="sub">The highlighted line is the line executing in this step.</p>
+ <div class="code" id="code"></div>
+ <div class="explain"><b>Variable values</b><div id="vars"></div></div>
+</section>
+</div>
+<section class="panel trace">
+ <h2>3. Execution summary</h2>
+ <table><thead><tr><th>Input used</th><th>dp before</th><th>nextDP after</th></tr></thead><tbody id="trace"></tbody></table>
+ <p id="result"></p>
+</section>
+</main>
+<script>
+const nums=[1,2,3,4], target=5;
+const code=[
+"class Solution:",
+"    def canPartition(self, nums: List[int]) -> bool:",
+"        if sum(nums) % 2:",
+"            return False",
+"",
+"        dp = set()",
+"        dp.add(0)",
+"        target = sum(nums) // 2",
+"",
+"        for i in range(len(nums) - 1, -1, -1):",
+"            nextDP = set()",
+"            for t in dp:",
+"                nextDP.add(t + nums[i])",
+"                nextDP.add(t)",
+"            dp = nextDP",
+"",
+"        return True if target in dp else False"
+];
+const steps=[
+{line:2,phase:"init",msg:"First check: is the total sum odd? Here sum(nums) = 10, and 10 % 2 = 0. So an equal split is possible in principle; continue.",vars:"sum(nums) = 10 · 10 % 2 = 0"},
+{line:6,phase:"init",msg:"Create an empty set. A set stores each possible sum only once, so duplicate sums are automatically removed.",vars:"dp = set() = {}"},
+{line:7,phase:"init",msg:"Add 0 because choosing no elements is a valid subset whose sum is zero. This is the starting point for building every other sum.",vars:"dp = {0}"},
+{line:8,phase:"init",msg:"Half of 10 is 5. We only need to find one subset that totals 5; the remaining elements must also total 5.",vars:"target = 10 // 2 = 5"},
+{line:10,phase:"start",i:3,msg:"The loop runs backwards: i = 3, so nums[i] = 4. We now consider whether each existing sum can skip or take 4.",vars:"i = 3 · nums[i] = 4"},
+{line:11,phase:"begin",i:3,before:[0],after:[],msg:"Start a fresh nextDP set. Keeping it separate from dp ensures this number is used at most once in this iteration.",vars:"dp = {0} · nextDP = {}"},
+{line:12,phase:"loop",i:3,t:0,before:[0],after:[],msg:"The inner loop takes an existing sum t = 0 from dp. For each old sum, we consider two choices: take the current number or skip it.",vars:"t = 0 · nums[i] = 4"},
+{line:13,phase:"take",i:3,t:0,before:[0],after:[4],msg:"TAKE 4: add t + nums[i] = 0 + 4 = 4 to nextDP. This represents the subset [4].",vars:"0 + 4 = 4 · nextDP = {4}"},
+{line:14,phase:"skip",i:3,t:0,before:[0],after:[0,4],msg:"SKIP 4: also carry the old sum t = 0 forward. Now nextDP contains {0, 4}.",vars:"nextDP = {0, 4}"},
+{line:15,phase:"assign",i:3,before:[0],after:[0,4],dp:[0,4],msg:"Replace dp with nextDP. After processing 4, the possible sums are 0 (skip 4) and 4 (take 4).",vars:"dp = {0, 4}"},
+{line:10,phase:"start",i:2,before:[0,4],msg:"Next i = 2, nums[i] = 3. We build sums from the existing {0, 4}.",vars:"i = 2 · nums[i] = 3"},
+{line:11,phase:"begin",i:2,before:[0,4],after:[],msg:"Create a fresh nextDP. The old dp remains {0, 4} while we build the new set.",vars:"dp = {0, 4} · nextDP = {}"},
+{line:12,phase:"loop",i:2,t:0,before:[0,4],after:[],msg:"First old sum: t = 0. Taking 3 gives 3; skipping 3 keeps 0.",vars:"t = 0 · take → 3 · skip → 0"},
+{line:13,phase:"take",i:2,t:0,before:[0,4],after:[3],msg:"TAKE 3: 0 + 3 = 3. Add 3 to nextDP.",vars:"nextDP = {3}"},
+{line:14,phase:"skip",i:2,t:0,before:[0,4],after:[0,3],msg:"SKIP 3: add 0 too. nextDP is now {0, 3}.",vars:"nextDP = {0, 3}"},
+{line:12,phase:"loop",i:2,t:4,before:[0,4],after:[0,3],msg:"Second old sum: t = 4. Taking 3 creates 7; skipping 3 keeps 4.",vars:"t = 4 · take → 7 · skip → 4"},
+{line:13,phase:"take",i:2,t:4,before:[0,4],after:[0,3,7],msg:"TAKE 3: 4 + 3 = 7. Add 7 to nextDP.",vars:"nextDP = {0, 3, 7}"},
+{line:14,phase:"skip",i:2,t:4,before:[0,4],after:[0,3,4,7],msg:"SKIP 3: add 4 too. Now nextDP = {0, 3, 4, 7}.",vars:"nextDP = {0, 3, 4, 7}"},
+{line:15,phase:"assign",i:2,before:[0,4],after:[0,3,4,7],dp:[0,3,4,7],msg:"Assign dp = nextDP. Using 4 and 3 in any allowed combination, the reachable sums are 0, 3, 4, and 7.",vars:"dp = {0, 3, 4, 7}"},
+{line:10,phase:"start",i:1,before:[0,3,4,7],msg:"Next i = 1, nums[i] = 2. We consider taking or skipping 2 for every old sum.",vars:"i = 1 · nums[i] = 2"},
+{line:11,phase:"begin",i:1,before:[0,3,4,7],after:[],msg:"Create an empty nextDP to hold the sums possible after processing 2.",vars:"dp = {0, 3, 4, 7} · nextDP = {}"},
+{line:12,phase:"loop",i:1,t:0,before:[0,3,4,7],after:[],msg:"For t = 0: take 2 to make 2, or skip it to keep 0.",vars:"t = 0 · take → 2 · skip → 0"},
+{line:13,phase:"take",i:1,t:0,before:[0,3,4,7],after:[2],msg:"TAKE 2: add 0 + 2 = 2.",vars:"nextDP = {2}"},
+{line:14,phase:"skip",i:1,t:0,before:[0,3,4,7],after:[0,2],msg:"SKIP 2: add 0. nextDP = {0, 2}.",vars:"nextDP = {0, 2}"},
+{line:12,phase:"loop",i:1,t:3,before:[0,3,4,7],after:[0,2],msg:"For t = 3: taking 2 makes 5; skipping 2 keeps 3.",vars:"t = 3 · take → 5 · skip → 3"},
+{line:13,phase:"take",i:1,t:3,before:[0,3,4,7],after:[0,2,5],msg:"TAKE 2: add 3 + 2 = 5. We have reached the target!",vars:"nextDP = {0, 2, 5}"},
+{line:14,phase:"skip",i:1,t:3,before:[0,3,4,7],after:[0,2,3,5],msg:"SKIP 2: add 3. nextDP = {0, 2, 3, 5}.",vars:"nextDP = {0, 2, 3, 5}"},
+{line:12,phase:"loop",i:1,t:4,before:[0,3,4,7],after:[0,2,3,5],msg:"For t = 4: taking 2 makes 6; skipping 2 keeps 4.",vars:"t = 4 · take → 6 · skip → 4"},
+{line:13,phase:"take",i:1,t:4,before:[0,3,4,7],after:[0,2,3,5,6],msg:"TAKE 2: add 4 + 2 = 6.",vars:"nextDP = {0, 2, 3, 5, 6}"},
+{line:14,phase:"skip",i:1,t:4,before:[0,3,4,7],after:[0,2,3,4,5,6],msg:"SKIP 2: add 4. nextDP now contains {0, 2, 3, 4, 5, 6}.",vars:"nextDP = {0, 2, 3, 4, 5, 6}"},
+{line:12,phase:"loop",i:1,t:7,before:[0,3,4,7],after:[0,2,3,4,5,6],msg:"For t = 7: taking 2 makes 9; skipping 2 keeps 7.",vars:"t = 7 · take → 9 · skip → 7"},
+{line:13,phase:"take",i:1,t:7,before:[0,3,4,7],after:[0,2,3,4,5,6,9],msg:"TAKE 2: add 7 + 2 = 9.",vars:"nextDP = {0, 2, 3, 4, 5, 6, 9}"},
+{line:14,phase:"skip",i:1,t:7,before:[0,3,4,7],after:[0,2,3,4,5,6,7,9],msg:"SKIP 2: add 7. All sums after processing 2 are now present.",vars:"nextDP = {0, 2, 3, 4, 5, 6, 7, 9}"},
+{line:15,phase:"assign",i:1,before:[0,3,4,7],after:[0,2,3,4,5,6,7,9],dp:[0,2,3,4,5,6,7,9],msg:"Assign dp = nextDP. Notice 5 is now in dp, formed by 3 + 2.",vars:"dp = {0, 2, 3, 4, 5, 6, 7, 9}"},
+{line:10,phase:"start",i:0,before:[0,2,3,4,5,6,7,9],msg:"Last number: i = 0, nums[i] = 1. Process it using the same take/skip rule.",vars:"i = 0 · nums[i] = 1"},
+{line:11,phase:"begin",i:0,before:[0,2,3,4,5,6,7,9],after:[],msg:"Create a fresh nextDP for sums after considering 1.",vars:"nextDP = {}"},
+{line:12,phase:"loop",i:0,t:0,before:[0,2,3,4,5,6,7,9],after:[],msg:"For every old sum, we add the version that takes 1 and the version that skips 1. For t = 0, those are 1 and 0.",vars:"t = 0 · take → 1 · skip → 0"},
+{line:13,phase:"take",i:0,t:0,before:[0,2,3,4,5,6,7,9],after:[1],msg:"TAKE 1: 0 + 1 = 1.",vars:"nextDP = {1}"},
+{line:14,phase:"skip",i:0,t:0,before:[0,2,3,4,5,6,7,9],after:[0,1],msg:"SKIP 1: add 0. Continue the same process for all remaining old sums.",vars:"nextDP = {0, 1}"},
+{line:15,phase:"assign",i:0,before:[0,2,3,4,5,6,7,9],after:[0,1,2,3,4,5,6,7,8,9,10],dp:[0,1,2,3,4,5,6,7,8,9,10],msg:"After all old sums are processed, dp contains every sum from 0 through 10. In particular, 5 is present.",vars:"dp = {0,1,2,3,4,5,6,7,8,9,10}"},
+{line:17,phase:"done",before:[0,1,2,3,4,5,6,7,8,9,10],dp:[0,1,2,3,4,5,6,7,8,9,10],msg:"Final check: target = 5 is in dp, so return True. One valid partition is [2, 3] and [1, 4].",vars:"target = 5 · 5 in dp → True"}
+];
+// Add a compact complete summary after the detailed instructional trace.
+const finalSteps=steps;
+let index=0;
+const $=id=>document.getElementById(id);
+function setHTML(id,html){$(id).innerHTML=html}
+function chips(id,values,extra=[]){
+ setHTML(id,values.map(v=>`<span class="sum ${v===target?'target':''} ${extra.includes(v)?'new':''}">${v}</span>`).join('')||'<span style="color:var(--muted)">∅ (empty)</span>');
+}
+function render(){
+ const s=finalSteps[index], i=s.i;
+ $('stepMetric').textContent=index===0?'Setup':index===finalSteps.length-1?'Result':`${index}`;
+ $('progress').textContent=`Step ${index} of ${finalSteps.length-1}`;
+ $('prev').disabled=index===0;$('next').disabled=index===finalSteps.length-1;
+ setHTML('array',nums.map((n,j)=>`<div class="num ${j===i?'active':(i!==undefined&&j>i?'done':'')}">${n}<small>index ${j}</small></div>`).join(''));
+ const before=s.before||s.dp||[0], after=s.after||s.dp||[];
+ chips('before',before);
+ chips('after',after,after.filter(v=>!before.includes(v)));
+ setHTML('code',code.map((line,j)=>`<span class="line ${j+1===s.line?'active':''}"><span class="ln">${j+1}</span>${line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')||' '}</span>`).join(''));
+ setHTML('explain',`<strong>What happens now?</strong><br>${s.msg}`);
+ setHTML('vars',s.vars);
+ const rows=[
+ ['4','{0}','{0, 4}'],
+ ['3','{0, 4}','{0, 3, 4, 7}'],
+ ['2','{0, 3, 4, 7}','{0, 2, 3, 4, 5, 6, 7, 9}'],
+ ['1','{0, 2, 3, 4, 5, 6, 7, 9}','{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}']
+ ];
+ setHTML('trace',rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join(''));
+ $('result').innerHTML=index===finalSteps.length-1?'<span class="final">Result: True — target 5 is reachable. [2, 3] and [1, 4] form equal subsets.</span>':'';
+}
+$('prev').onclick=()=>{if(index>0){index--;render()}};
+$('next').onclick=()=>{if(index<finalSteps.length-1){index++;render()}};
+$('reset').onclick=()=>{index=0;render()};
+render();
+</script>
+</body>
+</html>
