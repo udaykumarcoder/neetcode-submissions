@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unique Paths II — DFS + Memoization</title>
+<style>
+:root{--bg:#f3f6fb;--card:#fff;--ink:#18243a;--muted:#66758b;--border:#dce4ef;--blue:#2856c7;--gold:#fff0c2;--green:#e5f6ed;--red:#ffe7e7;--navy:#111d30}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,Segoe UI,sans-serif}
+header{background:var(--navy);color:#fff;padding:18px max(18px,calc((100% - 1180px)/2))}h1{font-size:22px;margin:0}header p{margin:4px 0 0;color:#c4d0e2}
+main{max-width:1180px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:17px;min-width:0;box-shadow:0 5px 18px #1c34500b}
+h2{font-size:17px;margin:0 0 4px}.hint{color:var(--muted);font-size:13px;margin:0 0 14px}
+.grid{display:grid;grid-template-columns:repeat(3,72px);gap:8px;margin:14px 0}.cell{height:67px;border:1px solid var(--border);border-radius:9px;background:#f7f9fc;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:19px;font-weight:750}.cell small{font-size:10px;color:var(--muted);font-weight:400}.cell.current{background:var(--gold);border:2px solid #d49a17}.cell.obstacle{background:#303b4d;color:white;border-color:#303b4d}.cell.obstacle small{color:#d7deea}.cell.visited{background:var(--green);border-color:#9ed2b6}
+.legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px}.dot{width:9px;height:9px;display:inline-block;border-radius:3px;margin-right:4px}
+.status{margin-top:14px;padding:13px;background:#f1f5fc;border:1px solid var(--border);border-radius:10px;min-height:83px}.status strong{color:var(--blue)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}button{padding:9px 13px;border:1px solid #c7d2e2;border-radius:8px;background:#fff;color:var(--ink);font-weight:650;cursor:pointer}button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}button:disabled{opacity:.35;cursor:not-allowed}
+.progress{height:6px;background:#e9eef6;border-radius:8px;margin-top:12px;overflow:hidden}.progress div{height:100%;background:var(--blue);width:0}
+.code{background:#101b2d;color:#e8effa;border-radius:10px;padding:12px;font:12px/1.85 ui-monospace,Consolas,monospace;overflow:auto}.line{display:block;white-space:pre;padding:0 7px;border-left:3px solid transparent}.line.active{background:#293a55;border-left-color:#ffd166}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px}.mini{background:#f7f9fc;border:1px solid var(--border);border-radius:9px;padding:10px;min-width:0}.mini h3{font-size:12px;margin:0 0 6px;color:var(--muted)}.stack,.cache{font:11px/1.6 ui-monospace,monospace;overflow-wrap:anywhere;max-height:150px;overflow:auto}.result{font-size:25px;font-weight:800;color:var(--blue);margin-top:12px}
+@media(max-width:850px){main{grid-template-columns:1fr}}
+</style></head><body>
+<header><h1>Unique Paths II · DFS + Memoization</h1><p>Small test input · 3 × 3 grid with one obstacle · Expected output: 2</p></header>
+<main>
+<section class="card">
+<h2>Grid + recursion progress</h2><p class="hint">Start at (0,0). From each open cell, try moving down or right.</p>
+<div class="grid" id="grid"></div>
+<div class="legend"><span><i class="dot" style="background:#fff0c2;border:1px solid #d49a17"></i>Current call</span><span><i class="dot" style="background:#e5f6ed;border:1px solid #9ed2b6"></i>Visited open cell</span><span><i class="dot" style="background:#303b4d"></i>Obstacle</span></div>
+<div class="status" id="msg"></div>
+<div class="progress"><div id="bar"></div></div>
+<div class="controls"><button id="prev">← Previous</button><button class="primary" id="next">Next step →</button><button id="reset">Reset</button><button id="end">Show result</button></div>
+<div class="result" id="answer" style="display:none">2 unique paths</div>
+</section>
+<section class="card">
+<h2>Python code</h2><p class="hint">The highlighted line follows the current recursive operation.</p>
+<div class="code">
+<span class="line" data-l="4">4   M, N = len(grid), len(grid[0])</span>
+<span class="line" data-l="5">5   dp = {(M - 1, N - 1): 1}</span>
+<span class="line" data-l="7">7   def dfs(r, c):</span>
+<span class="line" data-l="8">8       if r == M or c == N or grid[r][c]:</span>
+<span class="line" data-l="9">9           return 0</span>
+<span class="line" data-l="10">10      if (r, c) in dp:</span>
+<span class="line" data-l="11">11          return dp[(r, c)]</span>
+<span class="line" data-l="12">12      dp[(r, c)] = dfs(r + 1, c) + dfs(r, c + 1)</span>
+<span class="line" data-l="13">13      return dp[(r, c)]</span>
+<span class="line" data-l="15">15  return dfs(0, 0)</span>
+</div>
+<div class="two"><div class="mini"><h3>ACTIVE CALL STACK</h3><div class="stack" id="stack"></div></div><div class="mini"><h3>MEMOIZATION CACHE (dp)</h3><div class="cache" id="cache"></div></div></div>
+<div class="status" id="detail"><b>Key idea:</b> Each cell's answer is the number of paths going down plus the number going right. Obstacles and out-of-grid positions contribute 0.</div>
+</section></main>
+<script>
+const G=[[0,0,0],[0,1,0],[0,0,0]],M=3,N=3,events=[];let dp={"(2, 2)":1},stack=[],visited=new Set(),answers={};
+function snap(line,pos,msg,kind){events.push({line,pos,msg,kind,dp:{...dp},stack:[...stack],visited:[...visited]})}
+function dfs(r,c){
+ stack.push(`dfs(${r}, ${c})`);snap(7,[r,c],`Call dfs(${r}, ${c}). We are asking: how many paths lead to the destination from this cell?`,'enter');
+ if(r===M||c===N||G[r]?.[c]===1){let why=r===M?`row ${r} is outside the grid`:c===N?`column ${c} is outside the grid`:`grid[${r}][${c}] is an obstacle`;snap(8,[r,c],`Base case: ${why}. This route is invalid, so return 0.`,'base');stack.pop();snap(9,[r,c],`Return 0 from dfs(${r}, ${c}).`,'return');return 0}
+ if(dp[`(${r}, ${c})`]!==undefined){let v=dp[`(${r}, ${c})`];snap(10,[r,c],`We already calculated this cell: dp[(${r}, ${c})] = ${v}. Reuse it instead of exploring again.`,'memo');stack.pop();snap(11,[r,c],`Return cached value ${v}.`,'return');return v}
+ visited.add(`${r},${c}`);
+ let down=dfs(r+1,c),right=dfs(r,c+1),total=down+right;
+ dp[`(${r}, ${c})`]=total;
+ snap(12,[r,c],`Both branches returned. Down = ${down}; right = ${right}. Store dp[(${r}, ${c})] = ${down} + ${right} = ${total}.`,'store');
+ stack.pop();snap(13,[r,c],`Return dp[(${r}, ${c})] = ${total}.`,'return');return total;
+}
+let result=dfs(0,0);snap(15,[0,0],`The initial call returns ${result}. There are ${result} valid paths.`,'finish');
+let k=0;const $=x=>document.getElementById(x);
+function render(){let e=events[k];$('grid').innerHTML=G.flatMap((row,r)=>row.map((v,c)=>{let p=`${r},${c}`,cur=e.pos&&e.pos[0]===r&&e.pos[1]===c,vis=e.visited.includes(p);return `<div class="cell ${v?'obstacle':cur?'current':vis?'visited':''}">${v?'■':e.dp[`(${r}, ${c})`]!==undefined?e.dp[`(${r}, ${c})`]:'·'}<small>(${r},${c})</small></div>`})).join('');
+$('msg').innerHTML=`<strong>Step ${k+1} / ${events.length}</strong><br>${e.msg}`;$('stack').innerHTML=e.stack.length?e.stack.slice().reverse().map((x,i)=>`${i===0?'▶ ':'　 '}${x}`).join('<br>'):'(empty)';
+$('cache').innerHTML=Object.keys(e.dp).length?Object.entries(e.dp).map(([key,val])=>`${key} : ${val}`).join('<br>'):'(empty)';
+document.querySelectorAll('.line').forEach(x=>x.classList.toggle('active',+x.dataset.l===e.line));$('bar').style.width=((k+1)/events.length*100)+'%';$('prev').disabled=k===0;$('next').disabled=k===events.length-1;$('answer').style.display=e.kind==='finish'?'block':'none';
+$('detail').innerHTML=e.kind==='base'?'<b>Why return 0?</b> A path that leaves the grid or hits a blocked cell cannot reach the destination.':e.kind==='memo'?'<b>Why check dp?</b> Different routes can arrive at the same cell. Reuse its saved answer to avoid repeated work.':e.kind==='store'?'<b>Why add?</b> Every valid path must make its next move either down or right. These choices do not overlap, so add their counts.':'<b>Remember:</b> Destination has 1 path to itself; blocked/out-of-bounds cells have 0 paths.'}
+$('prev').onclick=()=>{if(k>0)k--;render()};$('next').onclick=()=>{if(k<events.length-1)k++;render()};$('reset').onclick=()=>{k=0;render()};$('end').onclick=()=>{k=events.length-1;render()};render();
+</script></body></html>
