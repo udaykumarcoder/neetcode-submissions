@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Minimum Path Sum — Forward DP</title>
+<style>
+:root{--bg:#f3f6fb;--card:#fff;--ink:#18243a;--muted:#66758b;--border:#dce4ef;--blue:#2856c7;--gold:#fff0c2;--green:#e5f6ed;--navy:#111d30}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,sans-serif}
+header{background:var(--navy);color:#fff;padding:20px max(18px,calc((100% - 1160px)/2))}
+header h1{font-size:23px;margin:0}
+header p{margin:5px 0 0;color:#c4d0e2;font-size:14px}
+main{max-width:1160px;margin:22px auto;padding:0 18px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:20px;min-width:0;box-shadow:0 5px 20px #1c34500a}
+h2{font-size:18px;margin:0 0 5px}
+.hint{color:var(--muted);font-size:13px;margin:0 0 17px}
+.label{font-size:12px;font-weight:700;color:var(--muted);margin:13px 0 8px}
+.matrix{display:grid;grid-template-columns:repeat(3,minmax(65px,82px));gap:9px}
+.cell{height:68px;border:1px solid var(--border);border-radius:10px;background:#f8fafd;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:21px;font-weight:750}
+.cell small{font-size:10px;color:var(--muted);font-weight:400;margin-top:1px}
+.cell.current{background:var(--gold);border:2px solid #d49a17}
+.cell.done{background:var(--green);border-color:#9ed2b6}
+.cell.start{background:#e8efff;border-color:#9eb7f4}
+.code{background:#101b2d;color:#e8effa;border-radius:11px;padding:14px 11px;font:12px/1.95 ui-monospace,Consolas,monospace;overflow-x:auto}
+.line{display:block;white-space:pre;padding:1px 9px;border-left:3px solid transparent}
+.line.active{background:#293a55;border-left-color:#ffd166;color:#fff}
+.status{margin-top:15px;padding:14px;background:#f1f5fc;border:1px solid var(--border);border-radius:11px;min-height:95px}
+.status strong{color:var(--blue)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+button{padding:10px 14px;border:1px solid #c7d2e2;border-radius:9px;background:#fff;color:var(--ink);font-weight:650;cursor:pointer}
+button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+button:disabled{opacity:.35;cursor:not-allowed}
+.progress{height:6px;background:#e9eef6;border-radius:8px;margin-top:14px;overflow:hidden}
+.progress div{height:100%;background:var(--blue);width:0;transition:width .15s}
+.info{background:#f8fafd;border:1px solid var(--border);border-radius:10px;padding:13px;margin-top:13px;font-size:13px}
+.info b{color:var(--blue)}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px}
+.metric{background:#f8fafd;border:1px solid var(--border);border-radius:10px;padding:12px}
+.metric small{display:block;color:var(--muted);font-weight:650}
+.metric b{display:block;font-size:19px;margin-top:4px}
+.result{font-size:25px;font-weight:800;color:var(--blue);margin-top:13px}
+.legend{display:flex;gap:13px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:12px}
+.dot{width:9px;height:9px;display:inline-block;border-radius:3px;margin-right:4px}
+@media(max-width:820px){main{grid-template-columns:1fr}.card{padding:16px}}
+</style>
+</head>
+<body>
+<header><h1>Minimum Path Sum · LeetCode 64</h1><p>Input: [[1, 2, 0], [5, 4, 2], [1, 1, 3]] · Expected output: 8</p></header>
+<main>
+<section class="card">
+<h2>Forward DP — fill from top-left</h2>
+<p class="hint">Each cell stores the minimum total cost needed to reach it from the starting cell.</p>
+<div class="label">ORIGINAL GRID</div><div id="input" class="matrix"></div>
+<div class="label">DP TABLE · MINIMUM COST SO FAR</div><div id="dp" class="matrix"></div>
+<div class="legend">
+<span><i class="dot" style="background:#fff0c2;border:1px solid #d49a17"></i>Current cell</span>
+<span><i class="dot" style="background:#e5f6ed;border:1px solid #9ed2b6"></i>Calculated</span>
+<span><i class="dot" style="background:#e8efff;border:1px solid #9eb7f4"></i>Start</span>
+</div>
+<div class="status" id="message"></div>
+<div class="progress"><div id="bar"></div></div>
+<div class="controls"><button id="prev">← Previous</button><button class="primary" id="next">Next step →</button><button id="reset">Reset</button><button id="end">Show answer</button></div>
+<div class="result" id="answer" hidden>Minimum path sum = 8</div>
+</section>
+<section class="card">
+<h2>Python code</h2><p class="hint">The highlighted line matches the current calculation.</p>
+<div class="code">
+<span class="line" data-l="1">1  ROWS, COLS = len(grid), len(grid[0])</span>
+<span class="line" data-l="2">2  dp = [[inf] * COLS for _ in range(ROWS)]</span>
+<span class="line" data-l="3">3  dp[0][0] = grid[0][0]</span>
+<span class="line" data-l="4">4  for r in range(ROWS):</span>
+<span class="line" data-l="5">5      for c in range(COLS):</span>
+<span class="line" data-l="6">6          if r == 0 and c == 0:</span>
+<span class="line" data-l="7">7              continue</span>
+<span class="line" data-l="8">8          top = dp[r-1][c] if r > 0 else inf</span>
+<span class="line" data-l="9">9          left = dp[r][c-1] if c > 0 else inf</span>
+<span class="line" data-l="10">10         dp[r][c] = grid[r][c] + min(top, left)</span>
+<span class="line" data-l="11">11 return dp[ROWS-1][COLS-1]</span>
+</div>
+<div class="metrics">
+<div class="metric"><small>CURRENT CELL</small><b id="position">—</b></div>
+<div class="metric"><small>DP CALCULATION</small><b id="calculation">—</b></div>
+</div>
+<div class="info" id="explain"><b>Transition rule</b><br>dp[r][c] = grid[r][c] + min(top, left)<br><br>To reach a cell, we must come either from above or from the left. Choose the cheaper accumulated cost.</div>
+<div class="info"><b>Boundary rules</b><br>• Top row: only the left cell can lead here.<br>• Left column: only the cell above can lead here.<br>• Starting cell: its DP value is its own cost (1).</div>
+</section>
+</main>
+<script>
+const G=[[1,2,0],[5,4,2],[1,1,3]],R=3,C=3,steps=[];
+let dp=Array.from({length:R},()=>Array(C).fill(Infinity));
+function save(line,pos,msg,calc){steps.push({line,pos,dp:dp.map(row=>row.slice()),msg,calc})}
+dp[0][0]=G[0][0];
+save(3,[0,0],"Start at the top-left cell. The minimum cost to reach the start is its own value: dp[0][0] = 1.","dp[0][0] = 1");
+for(let r=0;r<R;r++){
+ for(let c=0;c<C;c++){
+  if(r===0&&c===0)continue;
+  const top=r>0?dp[r-1][c]:Infinity;
+  const left=c>0?dp[r][c-1]:Infinity;
+  dp[r][c]=G[r][c]+Math.min(top,left);
+  let msg;
+  if(r===0)msg=`Top row: we can only arrive from the left. Cell cost ${G[r][c]} + left cost ${left} = ${dp[r][c]}.`;
+  else if(c===0)msg=`Left column: we can only arrive from above. Cell cost ${G[r][c]} + top cost ${top} = ${dp[r][c]}.`;
+  else msg=`At (${r}, ${c}), arriving from above costs ${top}; arriving from the left costs ${left}. Choose min(${top}, ${left}) = ${Math.min(top,left)}, then add this cell's cost ${G[r][c]}. Result = ${dp[r][c]}.`;
+  save(10,[r,c],msg,`${G[r][c]} + min(${top===Infinity?'∞':top}, ${left===Infinity?'∞':left}) = ${dp[r][c]}`);
+ }
+}
+save(11,[2,2],"All cells are calculated. The bottom-right cell contains the minimum total cost from the start: 8.","return dp[2][2] = 8");
+let step=0;const $=id=>document.getElementById(id);
+function render(){
+ const s=steps[step];
+ $('input').innerHTML=G.map((row,r)=>row.map((v,c)=>`<div class="cell ${s.pos[0]===r&&s.pos[1]===c?'current':''}">${v}<small>(${r}, ${c})</small></div>`).join('')).join('');
+ $('dp').innerHTML=s.dp.map((row,r)=>row.map((v,c)=>`<div class="cell ${s.pos[0]===r&&s.pos[1]===c?'current':v!==Infinity?(r===0&&c===0?'start':'done'):''}">${v===Infinity?'∞':v}<small>(${r}, ${c})</small></div>`).join('')).join('');
+ $('message').innerHTML=`<strong>Step ${step+1} of ${steps.length}</strong><br>${s.msg}`;
+ $('position').textContent=`(${s.pos[0]}, ${s.pos[1]})`;
+ $('calculation').textContent=s.calc;
+ $('explain').innerHTML=`<b>Why this calculation?</b><br>${s.pos[0]===0&&s.pos[1]===0?'This is the starting cell, so no previous cell is needed.':s.pos[0]===0?'Top row: only the left neighbor is reachable.':s.pos[1]===0?'Left column: only the upper neighbor is reachable.':'The previous move must be from above or left. We choose the smaller accumulated cost, then add the current cell value.'}`;
+ document.querySelectorAll('.line').forEach(el=>el.classList.toggle('active',Number(el.dataset.l)===s.line));
+ $('bar').style.width=`${(step+1)/steps.length*100}%`;
+ $('prev').disabled=step===0;$('next').disabled=step===steps.length-1;
+ $('answer').hidden=step!==steps.length-1;
+}
+$('prev').onclick=()=>{if(step>0)step--;render()};
+$('next').onclick=()=>{if(step<steps.length-1)step++;render()};
+$('reset').onclick=()=>{step=0;render()};
+$('end').onclick=()=>{step=steps.length-1;render()};
+render();
+</script>
+</body></html>
