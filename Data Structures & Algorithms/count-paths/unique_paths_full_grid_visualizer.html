@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unique Paths — Full Grid DP Visualizer</title>
+<style>
+:root{--bg:#f3f6fb;--card:#fff;--ink:#17243a;--muted:#66758b;--border:#dce4ef;--blue:#2856c7;--gold:#fff0c2;--green:#e5f6ed;--navy:#111d30}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,sans-serif}
+header{background:var(--navy);color:#fff;padding:18px max(18px,calc((100% - 1180px)/2))}h1{font-size:22px;margin:0}header p{margin:4px 0 0;color:#c4d0e2}
+main{max-width:1180px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns:1.1fr .9fr;gap:16px}.card{background:white;border:1px solid var(--border);border-radius:14px;padding:18px;min-width:0;box-shadow:0 5px 18px #1c34500b}
+h2{font-size:17px;margin:0 0 5px}.hint{color:var(--muted);font-size:13px;margin:0 0 16px}
+.matrix{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:12px}
+.cell{min-height:70px;background:#f7f9fc;border:1px solid var(--border);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.cell b{font-size:21px}.cell small{font-size:10px;color:var(--muted)}
+.cell.active{background:var(--gold);border:2px solid #d49a17}.cell.done{background:var(--green);border-color:#9ed2b6}.cell.fixed{background:#edf2ff;border-color:#cbd8f8}
+.rowname{font-size:12px;color:var(--muted);margin:12px 0 -5px}.axis{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-top:5px;color:var(--muted);font-size:10px;text-align:center}
+.status{margin-top:15px;padding:13px;background:#f1f5fc;border:1px solid var(--border);border-radius:10px;min-height:83px}.status strong{color:var(--blue)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}button{padding:9px 13px;border:1px solid #c7d2e2;border-radius:8px;background:#fff;color:var(--ink);font-weight:650;cursor:pointer}button.primary{background:var(--blue);color:white;border-color:var(--blue)}button:disabled{opacity:.35;cursor:not-allowed}
+.progress{height:6px;background:#e9eef6;border-radius:9px;margin-top:13px;overflow:hidden}.progress div{height:100%;background:var(--blue);width:0}
+.legend{display:flex;gap:13px;flex-wrap:wrap;margin-top:11px;color:var(--muted);font-size:11px}.dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px}
+.code{background:#101b2d;color:#e8effa;border-radius:10px;padding:12px;font:13px/1.9 ui-monospace,Consolas,monospace;overflow:auto}.line{display:block;white-space:pre;padding:0 8px;border-left:3px solid transparent}.line.active{background:#293a55;border-left-color:#ffd166}
+.explain{color:var(--muted);font-size:13px;margin-top:14px}.result{font-size:25px;color:var(--blue);font-weight:800;margin-top:14px}
+@media(max-width:850px){main{grid-template-columns:1fr}.cell{min-height:57px}.cell b{font-size:17px}}
+</style></head><body>
+<header><h1>Unique Paths · LeetCode 62</h1><p>m = 3, n = 6 &nbsp;·&nbsp; Output = 21</p></header>
+<main>
+<section class="card">
+<h2>Complete DP grid — all rows visible</h2><p class="hint">Every cell shows the number of ways to reach the destination from that position. Step through the calculation; the active cell is highlighted.</p>
+<div class="rowname">Top row · start position</div><div class="matrix" id="r0"></div>
+<div class="rowname">Middle row</div><div class="matrix" id="r1"></div>
+<div class="rowname">Bottom row · destination row</div><div class="matrix" id="r2"></div>
+<div class="axis"><span>col 0</span><span>col 1</span><span>col 2</span><span>col 3</span><span>col 4</span><span>col 5</span></div>
+<div class="legend"><span><i class="dot" style="background:#fff0c2;border:1px solid #d49a17"></i>Currently calculating</span><span><i class="dot" style="background:#e5f6ed;border:1px solid #9ed2b6"></i>Already calculated</span><span><i class="dot" style="background:#edf2ff;border:1px solid #cbd8f8"></i>Base case</span></div>
+<div class="status" id="msg"></div><div class="progress"><div id="bar"></div></div>
+<div class="controls"><button id="prev">← Previous</button><button class="primary" id="next">Next step →</button><button id="reset">Reset</button><button id="finish">Show final grid</button></div>
+<div class="result" id="answer" style="display:none">row[0] = 21 unique paths</div>
+</section>
+<section class="card">
+<h2>Python code</h2><p class="hint">Highlighted line matches the current calculation.</p>
+<div class="code">
+<span class="line" data-l="3">3   row = [1] * n</span>
+<span class="line" data-l="5">5   for i in range(m - 1):</span>
+<span class="line" data-l="6">6       newRow = [1] * n</span>
+<span class="line" data-l="7">7       for j in range(n - 2, -1, -1):</span>
+<span class="line" data-l="8">8           newRow[j] = newRow[j + 1] + row[j]</span>
+<span class="line" data-l="9">9       row = newRow</span>
+<span class="line" data-l="10">10  return row[0]</span></div>
+<div class="explain"><b>Why add these two cells?</b><br>To reach a cell, the last move must come either from the right or from below. So:<br><b>current cell = right neighbor + cell below</b><br><br>We move right-to-left, so the right neighbor has already been calculated.</div>
+<div class="status" id="math">Start: bottom row is all 1s. From any cell in the last row, there is only one way to reach the destination: move right.</div>
+</section>
+</main>
+<script>
+const steps=[];
+let a=[[null,null,null,null,null,null],[null,null,null,null,null,null],[1,1,1,1,1,1]];
+function snap(line,i,j,msg,kind){steps.push({line,i,j,a:a.map(r=>r.slice()),msg,kind})}
+snap(3,null,null,"Base case: the bottom row is [1, 1, 1, 1, 1, 1]. Each cell has exactly one route to the destination.",'base');
+for(let i=1;i>=0;i--){
+ for(let j=5;j>=0;j--){
+  if(j===5){a[i][j]=1;snap(6,i,j,`Column 5: this is the rightmost column. Only one move is possible: go down. So this cell = 1.`,'basecell')}
+  else {a[i][j]=a[i][j+1]+a[i+1][j];snap(8,i,j,`Cell (row ${i}, col ${j}): right = ${a[i][j+1]}, below = ${a[i+1][j]}. Add them: ${a[i][j+1]} + ${a[i+1][j]} = ${a[i][j]}.`,'calc')}
+ }
+ snap(9,i,null,`Row ${i} is complete: [${a[i].join(', ')}].`,'rowdone');
+}
+snap(10,null,null,"Finished! The top-left cell (row 0, col 0) contains 21. That is the total number of unique paths.",'finish');
+let k=0;const $=id=>document.getElementById(id);
+function render(){let s=steps[k];for(let r=0;r<3;r++){$('r'+r).innerHTML=s.a[r].map((v,c)=>{let cls='cell';if(r===2||c===5)cls+=' fixed';if(s.kind==='calc'&&r===s.i&&c===s.j)cls+=' active';else if(v!==null&&((r>s.i)||(r===s.i&&c>s.j))&&s.i!==null)cls+=' done';return `<div class="${cls}"><b>${v===null?'·':v}</b><small>(${r}, ${c})</small></div>`}).join('')}
+$('msg').innerHTML=`<strong>Step ${k+1} / ${steps.length}</strong><br>${s.msg}`;$('math').innerHTML=s.kind==='calc'?`<b>Current operation:</b> dp[${s.i}][${s.j}] = dp[${s.i}][${s.j+1}] + dp[${s.i+1}][${s.j}]`:'<b>Remember:</b> '+s.msg;
+document.querySelectorAll('.line').forEach(e=>e.classList.toggle('active',+e.dataset.l===s.line));$('bar').style.width=((k+1)/steps.length*100)+'%';$('prev').disabled=k===0;$('next').disabled=k===steps.length-1;$('answer').style.display=s.kind==='finish'?'block':'none'}
+$('prev').onclick=()=>{if(k>0)k--;render()};$('next').onclick=()=>{if(k<steps.length-1)k++;render()};$('reset').onclick=()=>{k=0;render()};$('finish').onclick=()=>{k=steps.length-1;render()};render();
+</script></body></html>
