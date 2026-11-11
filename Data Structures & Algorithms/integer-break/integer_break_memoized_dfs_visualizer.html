@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Integer Break — Memoized DFS Visualizer</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6fb;color:#182238;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:#14213d;color:white;padding:20px clamp(16px,3vw,30px)}header h1{margin:0 0 5px;font-size:26px}header p{margin:0;color:#cbd5e8}
+main{max-width:1400px;margin:auto;padding:16px}.bar,.panel{background:white;border:1px solid #dce2ed;border-radius:12px;padding:14px;margin-bottom:14px}
+.bar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}button{border:0;border-radius:8px;padding:9px 13px;background:#2563eb;color:white;font-weight:650;cursor:pointer}button.alt{background:#e8edf5;color:#172033}button:disabled{opacity:.4;cursor:not-allowed}input{width:65px;padding:8px;border:1px solid #ccd4e2;border-radius:7px}.meta{margin-left:auto;color:#667085}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.panel h2{font-size:18px;margin:0 0 9px}.hint{color:#667085;font-size:13px;margin-bottom:10px}
+.code{background:#101827;color:#e5e7eb;border-radius:9px;padding:10px 0;overflow:auto;font:13px/1.7 ui-monospace,Consolas,monospace}.line{white-space:pre;padding:0 10px}.ln{display:inline-block;width:28px;color:#8290a5}.line.active{background:#294d80;border-left:3px solid #8fc1ff;padding-left:7px}
+.status{background:#eaf1ff;color:#173d83;border-radius:9px;padding:12px;margin:12px 0;min-height:58px}.stack{display:flex;flex-wrap:wrap;gap:7px;min-height:44px}.frame{border:1px solid #b9cdf5;background:#edf3ff;border-radius:8px;padding:8px 11px}.frame.current{outline:3px solid #9dbbff}.frame small{display:block;color:#667085}
+.stats{display:flex;gap:8px;margin-top:12px}.stat{background:#f6f8fb;border:1px solid #e0e5ed;padding:9px;border-radius:8px;flex:1}.stat b{display:block;font-size:20px}.stat small{color:#667085}
+.tree{overflow:auto;max-height:440px;border:1px solid #e0e5ed;border-radius:8px;background:#fbfcff}.tree svg{display:block;min-width:100%}.node rect{fill:#fff;stroke:#9aa9c2;stroke-width:1.5}.node text{font:12px system-ui;text-anchor:middle;fill:#172033}.node.active rect{fill:#fff0d9;stroke:#d97706;stroke-width:3}.node.done rect{fill:#e5f7ec;stroke:#16834a}.node.cached rect{fill:#f2eaff;stroke:#7542b8;stroke-width:2}.edge{stroke:#aab5c7;stroke-width:1.5}
+.math{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0}.chip{border:1px solid #dce2ed;background:#f5f7fb;border-radius:8px;padding:7px 10px}.chip.current{background:#fff1df;border-color:#e9b777}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid #e5e9f0;text-align:left}th{color:#596579;background:#f7f9fc}tr.changed td{background:#eef6ff}.empty{color:#8993a3;font-style:italic}.result{font-size:25px;font-weight:800;color:#16834a}.legend{font-size:12px;color:#667085;display:flex;gap:12px;flex-wrap:wrap;margin:8px 0}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.meta{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+<header><h1>Integer Break — memoized DFS</h1><p>Visualize your exact code, including the dp dictionary and cache hits.</p></header>
+<main>
+<div class="bar">
+<label>Input n <input id="n" type="number" min="2" max="8" value="4"></label>
+<button id="reset">Reset / Build trace</button><button class="alt" id="prev">← Previous</button><button id="next">Next step →</button><button class="alt" id="auto">Auto play</button><span class="meta" id="meta"></span>
+</div>
+<div class="grid">
+<section class="panel">
+<h2>1. Exact Python code</h2><div class="hint">Highlighted line is executing now.</div><div class="code" id="code"></div>
+<h2 style="margin-top:15px">2. Recursive call stack</h2><div class="hint">The newest active call is on the right.</div><div class="stack" id="stack"></div>
+<div class="status" id="status"></div>
+<div class="stats"><div class="stat"><b id="calls">0</b><small>DFS calls</small></div><div class="stat"><b id="hits">0</b><small>Cache hits</small></div><div class="stat"><b id="depth">0</b><small>Stack depth</small></div></div>
+</section>
+<section class="panel">
+<h2>3. Recursion tree</h2><div class="hint">Purple nodes are calls answered directly from dp.</div><div class="legend"><span>🟠 Executing</span><span>🟢 Returned</span><span>🟣 Cache hit</span></div><div class="tree"><svg id="tree" viewBox="0 0 700 250"></svg></div>
+<h2 style="margin-top:15px">4. Current calculation</h2><div class="math" id="math"></div><p>Final answer: <span class="result" id="answer">—</span></p>
+</section>
+</div>
+<section class="panel"><h2>5. dp dictionary (memo)</h2><div class="hint">A number appears here only after its DFS work finishes and the result is stored.</div><div class="tablewrap"><table><thead><tr><th>Key</th><th>Value</th><th>Meaning</th></tr></thead><tbody id="dp"></tbody></table></div></section>
+<section class="panel"><b>Important:</b> `dfs(num)` first checks whether the answer is already in `dp`. If yes, it returns that saved answer instead of repeating the recursion. `dp[1]` is not stored here because your base case returns 1 directly.</section>
+</main>
+<script>
+const source=[
+'def integerBreak(self, n: int) -> int:',
+'    def dfs(num):',
+'        if num == 1:',
+'            return 1',
+'',
+'        if num in dp:',
+'            return dp[num]',
+'',
+'        res = 0 if num == n else num',
+'',
+'        for i in range(1, num):',
+'            val = dfs(i) * dfs(num-i)',
+'            res = max(res, val)',
+'',
+'        dp[num] = res',
+'        return res',
+'',
+'    dp = {}',
+'    return dfs(n)'
+];
+const code=document.querySelector('#code');
+source.forEach((x,i)=>{let d=document.createElement('div');d.className='line';d.id='l'+(i+1);d.innerHTML=`<span class="ln">${i+1}</span>${x.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')||'&nbsp;'}`;code.append(d)});
+let steps=[],at=0,timer=null;
+function build(){
+ stop();let n=Math.max(2,Math.min(8,+document.querySelector('#n').value||4));document.querySelector('#n').value=n;
+ steps=[];let memo={},nodes=[],stack=[],calls=0,hits=0,idCounter=0;
+ function snap(line,msg,cur,math=[]){steps.push({line,msg,cur,math,stack:stack.map(x=>({...x})),memo:{...memo},nodes:nodes.map(x=>({...x})),calls,hits})}
+ function dfs(num,parent=null,depth=0){
+  let id=++idCounter;nodes.push({id,num,parent,depth,state:'active',cached:false});calls++;stack.push({id,num});
+  snap(2,`Enter dfs(${num}). Push dfs(${num}) onto the call stack.`,id,[`dfs(${num})`]);
+  snap(3,`Check base case: is num == 1? ${num} == 1 is ${num===1}.`,id,[`${num} == 1 → ${num===1}`]);
+  if(num===1){
+   snap(4,'Base case: return 1 immediately. This call does not read or write dp.',id,['return 1']);
+   stack.pop();nodes.find(x=>x.id===id).state='done';snap(19,'dfs(1) returns 1 to its caller; remove this frame.',parent,['returned 1']);return 1;
+  }
+  snap(6,`Check memo: is ${num} already a key in dp? ${Object.hasOwn(memo,num)}.`,id,[`${num} in dp → ${Object.hasOwn(memo,num)}`]);
+  if(Object.hasOwn(memo,num)){
+   hits++;nodes.find(x=>x.id===id).cached=true;nodes.find(x=>x.id===id).state='cached';
+   snap(7,`Cache hit! dp[${num}] is ${memo[num]}, so return it without trying splits.`,id,[`dp[${num}] = ${memo[num]}`]);
+   stack.pop();snap(19,`dfs(${num}) returns cached value ${memo[num]}; remove this frame.`,parent,[`returned ${memo[num]} (cached)`]);return memo[num];
+  }
+  let res=num===n?0:num;
+  snap(9,`Initialize res = ${res}. ${num===n?'This is the original n, so it must be split.':'This is a smaller piece, so it may stay whole.'}`,id,[`res = ${res}`]);
+  for(let i=1;i<num;i++){
+   snap(11,`Loop: i = ${i}. Python evaluates dfs(${i}) first.`,id,[`i = ${i}`,`next call: dfs(${i})`]);
+   nodes.find(x=>x.id===id).state='wait';
+   let a=dfs(i,id,depth+1);
+   snap(12,`dfs(${i}) returned ${a}. Now Python evaluates dfs(${num-i}).`,id,[`left result = ${a}`,`next call: dfs(${num-i})`]);
+   let b=dfs(num-i,id,depth+1),v=a*b;
+   snap(12,`Both recursive calls returned. val = ${a} × ${b} = ${v}.`,id,[`${a} × ${b} = ${v}`]);
+   let old=res;res=Math.max(res,v);
+   snap(13,`Update res = max(${old}, ${v}) = ${res}.`,id,[`max(${old}, ${v}) = ${res}`,`res = ${res}`]);
+   nodes.find(x=>x.id===id).state='active';
+  }
+  memo[num]=res;snap(15,`All splits of ${num} are done. Save the answer: dp[${num}] = ${res}.`,id,[`dp[${num}] = ${res}`]);
+  snap(16,`Return res = ${res}.`,id,[`return ${res}`]);
+  stack.pop();nodes.find(x=>x.id===id).state='done';snap(19,`dfs(${num}) returns ${res}; remove its frame from the stack.`,parent,[`returned ${res}`]);return res;
+ }
+ let answer=dfs(n);
+ steps.push({line:19,msg:`Top-level dfs(${n}) finished. Final answer = ${answer}.`,cur:null,math:[`integerBreak(${n}) = ${answer}`],stack:[],memo:{...memo},nodes:nodes.map(x=>({...x})),calls,hits,answer});
+ at=0;render();
+}
+function render(){
+ let s=steps[at];if(!s)return;
+ document.querySelectorAll('.line').forEach(x=>x.classList.remove('active'));document.querySelector('#l'+s.line).classList.add('active');
+ document.querySelector('#status').textContent=s.msg;document.querySelector('#meta').textContent=`Step ${at+1} / ${steps.length}`;
+ document.querySelector('#calls').textContent=s.calls;document.querySelector('#hits').textContent=s.hits;document.querySelector('#depth').textContent=s.stack.length;
+ let stack=document.querySelector('#stack');stack.innerHTML='';if(!s.stack.length)stack.textContent='(empty — execution finished)';
+ s.stack.forEach((f,i)=>{let d=document.createElement('div');d.className='frame'+(i===s.stack.length-1?' current':'');d.innerHTML=`<b>dfs(${f.num})</b><small>${i===s.stack.length-1?'running':'parent waiting'}</small>`;stack.append(d)});
+ document.querySelector('#math').innerHTML=s.math.map((x,i)=>`<span class="chip ${i===0?'current':''}">${x}</span>`).join('');
+ document.querySelector('#answer').textContent=s.answer??'—';
+ let body=document.querySelector('#dp');body.innerHTML='';let entries=Object.entries(s.memo).sort((a,b)=>+a[0]-+b[0]);
+ if(!entries.length)body.innerHTML='<tr><td colspan="3" class="empty">dp is empty — no result has been saved yet.</td></tr>';
+ entries.forEach(([k,v])=>{let tr=document.createElement('tr');tr.innerHTML=`<td>dp[${k}]</td><td><b>${v}</b></td><td>Best product calculated for ${k}</td>`;body.append(tr)});
+ draw(s);document.querySelector('#prev').disabled=at===0;document.querySelector('#next').disabled=at===steps.length-1;
+}
+function draw(s){
+ let ns=s.nodes,svg=document.querySelector('#tree');if(!ns.length)return;let levels={};ns.forEach(x=>(levels[x.depth]??=[]).push(x));let md=Math.max(...ns.map(x=>x.depth)),w=Math.max(700,(levels[0]?.length||1)*105),pos={};
+ for(let d=0;d<=md;d++)(levels[d]||[]).forEach((x,j)=>pos[x.id]={x:(j+1)*w/((levels[d]||[]).length+1),y:30+d*72});
+ let out='';ns.forEach(x=>{if(x.parent&&pos[x.parent])out+=`<path class="edge" d="M${pos[x.parent].x},${pos[x.parent].y+19} L${pos[x.id].x},${pos[x.id].y-19}"/>`});
+ ns.forEach(x=>{let p=pos[x.id],cl=x.id===s.cur?'active':x.state==='cached'?'cached':x.state==='done'?'done':'';out+=`<g class="node ${cl}"><rect x="${p.x-34}" y="${p.y-18}" width="68" height="36" rx="8"/><text x="${p.x}" y="${p.y+4}">dfs(${x.num})</text></g>`});
+ svg.setAttribute('viewBox',`0 0 ${w} ${Math.max(130,(md+1)*72+20)}`);svg.innerHTML=out;
+}
+function stop(){if(timer)clearInterval(timer);timer=null;document.querySelector('#auto').textContent='Auto play'}
+document.querySelector('#reset').onclick=build;document.querySelector('#next').onclick=()=>{stop();if(at<steps.length-1){at++;render()}};document.querySelector('#prev').onclick=()=>{stop();if(at>0){at--;render()}};
+document.querySelector('#auto').onclick=()=>{if(timer){stop();return}document.querySelector('#auto').textContent='Pause';timer=setInterval(()=>{if(at>=steps.length-1){stop();return}at++;render()},650)};
+build();
+</script>
+</body></html>
