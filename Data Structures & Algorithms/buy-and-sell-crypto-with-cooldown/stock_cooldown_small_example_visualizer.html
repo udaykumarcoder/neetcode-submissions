@@ -1,0 +1,38 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stock Cooldown Visualizer</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f6fb;color:#18243a;font:14px/1.5 system-ui,Arial}header{background:#111d30;color:white;padding:20px max(18px,calc((100% - 1100px)/2))}main{max-width:1100px;margin:22px auto;padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{background:white;border:1px solid #dce4ef;border-radius:14px;padding:18px;min-width:0}h1{font-size:22px;margin:0}h2{font-size:18px;margin:0 0 8px}.muted{color:#66758b;font-size:13px}.prices{display:flex;gap:9px;margin:14px 0}.price{padding:12px;width:65px;text-align:center;border:1px solid #dce4ef;border-radius:9px;background:#f8fafd;font-size:20px;font-weight:bold}.active{background:#fff0c2!important;border:2px solid #d49a17!important}.status,.panel{background:#f1f5fc;border:1px solid #dce4ef;border-radius:10px;padding:13px;margin-top:12px;min-height:75px}.code{background:#101b2d;color:#e8effa;padding:12px;border-radius:10px;font:12px/1.9 monospace;overflow:auto}.line{display:block;white-space:pre;padding:1px 7px;border-left:3px solid transparent}.line.active{background:#293a55;border-left-color:#ffd166}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}button{padding:9px 13px;border:1px solid #c7d2e2;border-radius:8px;background:white;cursor:pointer;font-weight:bold}button.primary{background:#2856c7;color:white}button:disabled{opacity:.35}.progress{height:6px;background:#e9eef6;margin-top:12px}.progress div{height:100%;background:#2856c7;width:0}.mono{font:12px/1.7 monospace;overflow-wrap:anywhere}.result{font-size:24px;color:#2856c7;font-weight:bold;margin-top:12px}@media(max-width:800px){main{grid-template-columns:1fr}}
+</style></head><body>
+<header><h1>Best Time to Buy and Sell Stock with Cooldown · LeetCode 309</h1><div class="muted">Simple example: prices = [1, 2, 3] · Expected profit = 2</div></header>
+<main><section class="card"><h2>Daily prices & current decision</h2><div class="muted">At each day, choose cooldown or the action allowed by your state.</div><div class="prices" id="prices"></div><div class="status" id="msg"></div><div class="progress"><div id="bar"></div></div><div class="controls"><button id="prev">← Previous</button><button class="primary" id="next">Next step →</button><button id="reset">Reset</button><button id="end">Show result</button></div><div class="result" id="result" hidden>Maximum profit = 2</div><div class="panel"><b>State:</b><br>buying=True → no stock held; you may buy.<br>buying=False → holding a stock; you may sell.</div></section>
+<section class="card"><h2>Python code</h2><div class="code">
+<span class="line" data-l="1">1  def dfs(i, buying):</span>
+<span class="line" data-l="2">2      if i >= len(prices): return 0</span>
+<span class="line" data-l="3">3      if (i, buying) in dp:</span>
+<span class="line" data-l="4">4          return dp[(i, buying)]</span>
+<span class="line" data-l="5">5      cooldown = dfs(i + 1, buying)</span>
+<span class="line" data-l="6">6      if buying:</span>
+<span class="line" data-l="7">7          buy = dfs(i + 1, False) - prices[i]</span>
+<span class="line" data-l="8">8          dp[(i,buying)] = max(buy, cooldown)</span>
+<span class="line" data-l="9">9      else:</span>
+<span class="line" data-l="10">10         sell = dfs(i + 2, True) + prices[i]</span>
+<span class="line" data-l="11">11         dp[(i,buying)] = max(sell, cooldown)</span>
+<span class="line" data-l="12">12     return dp[(i,buying)]</span>
+<span class="line" data-l="13">13 return dfs(0, True)</span></div>
+<div class="panel"><b>Active call stack</b><div id="stack" class="mono"></div></div><div class="panel"><b>DP cache</b><div id="cache" class="mono">Empty</div></div><div class="panel" id="why">Buy subtracts the price; sell adds the price. After selling, jump two days because the next day is cooldown.</div></section></main>
+<script>
+const prices=[1,2,3],dp={},events=[];let stack=[];
+function snap(line,i,b,msg,kind){events.push({line,i,b,msg,kind,stack:[...stack],dp:{...dp}})}
+function dfs(i,b){
+ stack.push(`dfs(${i}, ${b})`);snap(1,i,b,`Call dfs(${i}, ${b}). ${b?'We do not own a stock, so we may buy.':'We own a stock, so we may sell.'}`,'call');
+ if(i>=prices.length){snap(2,i,b,`Index ${i} is past the final day. Return 0 because no future transaction is possible.`,'base');stack.pop();return 0}
+ let key=`${i},${b}`;if(dp[key]!==undefined){snap(3,i,b,`This state is already cached: dp[(${i}, ${b})] = ${dp[key]}. Reuse it.`,'memo');stack.pop();return dp[key]}
+ snap(5,i,b,`Option 1: cooldown. Do nothing today and move to day ${i+1}, keeping the same state.`,'cool');let cool=dfs(i+1,b);
+ if(b){snap(7,i,b,`Option 2: BUY today for ${prices[i]}. Buying costs money, so subtract ${prices[i]}; next day we hold the stock.`,'buy');let buy=dfs(i+1,false)-prices[i];dp[key]=Math.max(buy,cool);snap(8,i,b,`Compare buy = ${buy} with cooldown = ${cool}. Keep max(${buy}, ${cool}) = ${dp[key]}.`,'store')}
+ else{snap(10,i,b,`Option 2: SELL today for ${prices[i]}. Add ${prices[i]} to profit, then jump to day ${i+2} because day ${i+1} is cooldown.`,'sell');let sell=dfs(i+2,true)+prices[i];dp[key]=Math.max(sell,cool);snap(11,i,b,`Compare sell = ${sell} with cooldown = ${cool}. Keep max(${sell}, ${cool}) = ${dp[key]}.`,'store')}
+ stack.pop();snap(12,i,b,`Return dp[(${i}, ${b})] = ${dp[key]}.`,'return');return dp[key]
+}
+let answer=dfs(0,true);events.push({line:13,i:0,b:true,msg:'Final result: dfs(0, True) = 2. Buy on day 0 for 1, then sell on day 2 for 3. Profit = 3 − 1 = 2.',kind:'finish',stack:[],dp:{...dp}});
+let k=0,$=id=>document.getElementById(id);
+function render(){let e=events[k];$('prices').innerHTML=prices.map((v,i)=>`<div class="price ${e.i===i?'active':''}">${v}<small style="display:block;font-size:10px">Day ${i}</small></div>`).join('');$('msg').innerHTML=`<b>Step ${k+1} / ${events.length}</b><br>${e.msg}`;$('stack').innerHTML=e.stack.length?e.stack.slice().reverse().map((v,i)=>`<div>${i===0?'▶ ':''}${v}</div>`).join(''):'(all calls returned)';$('cache').innerHTML=Object.entries(e.dp).map(([x,v])=>`(${x.replace(',',' , ')}) → ${v}`).join('<br>')||'Empty';document.querySelectorAll('.line').forEach(x=>x.classList.toggle('active',+x.dataset.l===e.line));$('bar').style.width=(k+1)/events.length*100+'%';$('prev').disabled=k===0;$('next').disabled=k===events.length-1;$('result').hidden=e.kind!=='finish';$('why').innerHTML=e.kind==='buy'?'<b>Why subtract?</b><br>Buying spends money, so it reduces profit.':e.kind==='sell'?'<b>Why i + 2?</b><br>After selling, the next day is a mandatory cooldown day.':e.kind==='store'?'<b>Why max?</b><br>We want the highest profit, so compare taking the action with doing nothing.':'<b>Remember:</b> cooldown keeps the same state and moves one day forward.'}
+$('prev').onclick=()=>{if(k>0)k--;render()};$('next').onclick=()=>{if(k<events.length-1)k++;render()};$('reset').onclick=()=>{k=0;render()};$('end').onclick=()=>{k=events.length-1;render()};render();
+</script></body></html>
