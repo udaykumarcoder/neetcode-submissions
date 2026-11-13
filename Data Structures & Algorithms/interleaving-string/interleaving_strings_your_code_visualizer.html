@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Interleaving Strings — Your DFS Code</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:22px;background:#0b1020;color:#e8eefc;font:15px/1.5 system-ui}main{max-width:1150px;margin:auto}h1{font-size:24px;margin:0}p,.muted{color:#9eacc5}.sample{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.tag{padding:8px 11px;background:#172640;border:1px solid #344968;border-radius:8px}.layout{display:grid;grid-template-columns:1fr 1fr;gap:15px}.panel{background:#141e32;border:1px solid #30405e;border-radius:12px;padding:16px;min-width:0}h2{font-size:17px;margin:0 0 12px}.rows{display:grid;gap:10px;margin:20px 0}.r{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.lab{width:32px;color:#9eacc5;font:12px monospace}.c{width:32px;height:36px;display:grid;place-items:center;background:#20324f;border:1px solid #405574;border-radius:6px;position:relative;font:15px monospace}.c small{position:absolute;bottom:-16px;color:#9eacc5;font:9px system-ui}.used{opacity:.32}.cur{outline:2px solid #7dd3fc;background:#17415a}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px}.box{background:#0e1729;border:1px solid #2b3a56;border-radius:8px;padding:9px;min-height:65px;overflow-wrap:anywhere}.box b{display:block;color:#9eacc5;font-size:12px;margin-bottom:4px}.stack,.cache{display:flex;flex-direction:column;gap:4px}.cache{flex-direction:row;flex-wrap:wrap}.entry,.frame{background:#22324e;padding:4px 6px;border-radius:6px;font:11px monospace}.frame.active{outline:1px solid #7dd3fc}.code{font:12px/1.8 ui-monospace,monospace;white-space:pre-wrap}.line{display:block;padding:0 7px;border-radius:4px}.line.active{background:#35445f;border-left:3px solid #7dd3fc}.why{min-height:85px}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.controls button{padding:9px 12px;background:#203653;color:white;border:1px solid #526989;border-radius:8px;cursor:pointer}.controls .primary{background:#075985}.controls button:disabled{opacity:.35}.track{height:5px;background:#263651;margin:12px 0}.bar{height:5px;background:#7dd3fc;width:0}.hint{font-size:12px;color:#9eacc5}@media(max-width:760px){.layout{grid-template-columns:1fr}}
+</style></head><body><main>
+<h1>Interleaving Strings — DFS + Memoization</h1>
+<p>Follow your exact code, including the length check. Sample: s1 = "aabcc", s2 = "dbbca", s3 = "aadbbcbcac".</p>
+<div class="sample"><span class="tag">len(s1) + len(s2) = 10</span><span class="tag">len(s3) = 10</span><span class="tag">Expected output: <b style="color:#86efac">True</b></span></div>
+<div class="layout">
+<section class="panel"><h2>1. Visual pointers</h2><div class="muted">State (i, j): next target character is s3[i+j].</div><div class="rows" id="rows"></div>
+<div class="grid"><div class="box"><b>Current call</b><span id="call"></span></div><div class="box"><b>Target character</b><span id="target"></span></div><div class="box"><b>Call stack</b><div class="stack" id="stack"></div></div><div class="box"><b>Memo cache</b><div class="cache" id="cache"></div></div></div>
+<h2 style="margin-top:15px">Explanation</h2><div id="why" class="why"></div></section>
+<section class="panel"><h2>2. Exact Python code</h2><div id="code" class="code"></div><div class="track"><div id="bar" class="bar"></div></div><div class="controls"><button id="prev">← Previous</button><button class="primary" id="next">Next step →</button><button id="reset">Reset</button></div><p id="count" class="hint"></p></section>
+</div>
+<section class="panel" style="margin-top:15px"><h2>Remember these 3 ideas</h2><p><b>1.</b> If lengths do not match, return False immediately.</p><p><b>2.</b> If s1[i] matches s3[i+j], try taking from s1. If s2[j] matches, try taking from s2.</p><p><b>3.</b> A state (i,j) is saved as False only after both choices fail. A successful branch returns True immediately.</p></section>
+</main><script>
+const s1='aabcc',s2='dbbca',s3='aadbbcbcac',events=[],memo={},stack=[];
+const code=[
+'class Solution:',
+'    def isInterleave(self, s1: str, s2: str, s3: str) -> bool:',
+'        if len(s1) + len(s2) != len(s3):',
+'            return False',
+'',
+'        dp = {}',
+'        def dfs(i, j):',
+'            if i == len(s1) and j == len(s2):',
+'                return True',
+'            if (i, j) in dp:',
+'                return dp[(i, j)]',
+'            if i < len(s1) and s1[i] == s3[i+j] and dfs(i+1, j):',
+'                return True',
+'            if j < len(s2) and s2[j] == s3[i+j] and dfs(i, j+1):',
+'                return True',
+'            dp[(i,j)] = False',
+'            return False',
+'        return dfs(0, 0)'
+];
+document.getElementById('code').innerHTML=code.map((x,n)=>`<span class="line" id="l${n+1}">${String(n+1).padStart(2,' ')}  ${x.replaceAll('<','&lt;')}</span>`).join('');
+function snap(line,call,why){events.push({line,call,why,memo:{...memo},stack:[...stack]})}
+function dfs(i,j){
+ stack.push(`dfs(${i}, ${j})`);snap(7,`dfs(${i}, ${j})`,`Enter state: used ${i} character(s) from s1 and ${j} from s2. Next character to match is s3[${i+j}].`);
+ if(i===s1.length&&j===s2.length){snap(8,`dfs(${i}, ${j})`,'Both source strings are fully consumed. We formed all of s3, so return True.');stack.pop();snap(9,`dfs(${i}, ${j})`,'Return True to caller.');return true}
+ if(Object.hasOwn(memo,`${i},${j}`)){let v=memo[`${i},${j}`];snap(10,`dfs(${i}, ${j})`,`Cache hit: state (${i}, ${j}) was previously saved as ${v}.`);stack.pop();snap(11,`dfs(${i}, ${j})`,`Return cached ${v}.`);return v}
+ let k=i+j;
+ if(i<s1.length&&s1[i]===s3[k]){snap(12,`dfs(${i}, ${j})`,`s1[${i}] = '${s1[i]}' matches s3[${k}] = '${s3[k]}'. Try taking from s1: dfs(${i+1}, ${j}).`);if(dfs(i+1,j)){stack.pop();snap(13,`dfs(${i}, ${j})`,'The s1 branch succeeded, so return True.');return true}}
+ else snap(12,`dfs(${i}, ${j})`,i===s1.length?'s1 is exhausted; cannot take from s1.':`s1[${i}] = '${s1[i]}' does not match s3[${k}] = '${s3[k]}'.`);
+ if(j<s2.length&&s2[j]===s3[k]){snap(14,`dfs(${i}, ${j})`,`s2[${j}] = '${s2[j]}' matches s3[${k}] = '${s3[k]}'. Try taking from s2: dfs(${i}, ${j+1}).`);if(dfs(i,j+1)){stack.pop();snap(15,`dfs(${i}, ${j})`,'The s2 branch succeeded, so return True.');return true}}
+ else snap(14,`dfs(${i}, ${j})`,j===s2.length?'s2 is exhausted; cannot take from s2.':`s2[${j}] = '${s2[j]}' does not match s3[${k}] = '${s3[k]}'.`);
+ memo[`${i},${j}`]=false;snap(16,`dfs(${i}, ${j})`,`Both choices failed. Save dp[(${i}, ${j})] = False.`);stack.pop();snap(17,`dfs(${i}, ${j})`,'Return False to caller.');return false
+}
+snap(3,'length check','The two source lengths add up to 10, and s3 has length 10. Continue to DFS.');
+const result=dfs(0,0);snap(18,'return dfs(0, 0)',`Final result: ${result}.`);
+let step=0,$=id=>document.getElementById(id);
+function row(label,s,used,pos){return `<div class="r"><span class="lab">${label}</span>${[...s].map((c,i)=>`<span class="c ${i<used?'used':''} ${i===pos?'cur':''}">${c}<small>${i}</small></span>`).join('')}</div>`}
+function render(){let e=events[step],m=e.call.match(/dfs\((\d+), (\d+)\)/),i=m?+m[1]:0,j=m?+m[2]:0,k=i+j;code.forEach((_,n)=>$('l'+(n+1)).classList.toggle('active',n+1===e.line));$('rows').innerHTML=row('s1',s1,i,i<s1.length?i:-1)+row('s2',s2,j,j<s2.length?j:-1)+row('s3',s3,k,k<s3.length?k:-1);$('call').textContent=e.call;$('target').textContent=k<s3.length?`s3[${k}] = '${s3[k]}'`:'End of s3';$('why').textContent=e.why;$('stack').innerHTML=e.stack.length?e.stack.slice().reverse().map((x,n)=>`<span class="frame ${n===0?'active':''}">${x}</span>`).join(''):'All calls returned';let entries=Object.entries(e.memo);$('cache').innerHTML=entries.length?entries.map(([key,val])=>`<span class="entry">(${key}) → ${val}</span>`).join(''):'Empty';$('bar').style.width=((step+1)/events.length*100)+'%';$('count').textContent=`Step ${step+1} / ${events.length}`;$('prev').disabled=step===0;$('next').disabled=step===events.length-1}
+$('prev').onclick=()=>{if(step){step--;render()}};$('next').onclick=()=>{if(step<events.length-1){step++;render()}};$('reset').onclick=()=>{step=0;render()};render();
+</script></body></html>
