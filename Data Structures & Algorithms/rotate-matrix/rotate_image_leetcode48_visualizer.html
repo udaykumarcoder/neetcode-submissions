@@ -1,0 +1,43 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rotate Image Visualizer</title>
+<style>
+body{margin:0;background:#0b1020;color:#edf3ff;font:15px system-ui;padding:18px}main{max-width:1150px;margin:auto}.panel{background:#141f35;border:1px solid #30415f;border-radius:12px;padding:16px;margin:0 0 14px}h1{font-size:25px;margin:0}h2{font-size:17px}.grid{display:grid;grid-template-columns:1fr 1.1fr;gap:14px}.code{background:#081222;padding:12px;border-radius:8px;overflow:auto;white-space:pre;font:13px/1.7 monospace}.line{display:block;padding:0 5px;border-left:3px solid transparent}.active{background:#263b5d;border-left-color:#ffbd69}.matrix{display:grid;gap:5px;width:max-content;margin:15px auto}.cell{width:46px;height:42px;display:grid;place-items:center;background:#0b172b;border:1px solid #3b4d6b;border-radius:6px;font:17px monospace}.focus{background:#49371f;border:2px solid #ffbd69}.saved{background:#153d35;border:2px solid #63d69a}.moved{background:#123b49;border:2px solid #62d8e8}.muted,.why{color:#bac8df;min-height:48px}button,select{padding:10px 14px;margin:8px 6px 0 0;border:0;border-radius:8px;background:#294365;color:white;cursor:pointer}button:disabled{opacity:.35}.metric{display:inline-block;padding:6px 9px;margin:4px;background:#0b1426;color:#69dce9;border-radius:6px;font:13px monospace}.note{border-left:3px solid #ffbd69;padding:10px;background:#292216;color:#f2d8a8}@media(max-width:780px){.grid{grid-template-columns:1fr}.cell{width:40px;height:38px}}
+</style></head><body><main>
+<section class="panel"><h1>Rotate Image — LeetCode 48</h1><p class="muted">Rotate an n × n matrix 90° clockwise, in-place.</p>
+<select id="size"><option value="3">3 × 3 example</option><option value="4">4 × 4 example</option></select><button id="reset">Reset</button><button id="prev">Previous</button><button id="next">Next Step</button><span class="metric" id="count"></span></section>
+<div class="grid"><section class="panel"><h2>Matrix state</h2><div class="muted" id="msg"></div><div id="matrix" class="matrix"></div><div id="vars"></div><p class="muted">Yellow: current cell · Green: saved value destination · Blue: recently written</p></section>
+<section class="panel"><h2>Python code — highlighted line</h2><div class="code" id="code"></div><h3>Why this line?</h3><div class="why" id="why"></div></section></div>
+<section class="panel"><h2>Core idea</h2><p>Each group of four cells rotates in a cycle: bottom-left → top-left → top-right → bottom-right → bottom-left.</p><p>Save the top-left value first because it gets overwritten. Put that saved value into the top-right cell at the end.</p><div class="note"><b>Important:</b> <code>range(r-l)</code> excludes the last corner offset so that a group of four corners is not processed twice. After one layer, shrink the boundaries: <code>l += 1</code>, <code>r -= 1</code>.</div></section>
+</main><script>
+const $=x=>document.getElementById(x);
+const code=[
+'1  class Solution:','2      def rotate(self, matrix):','3          l, r = 0, len(matrix) - 1','4',
+'5          while l < r:','6              for i in range(r - l):','7                  top, bottom = l, r','8',
+'9                  # save the topLeft','10                 topLeft = matrix[top][l + i]','11',
+'12                 # bottom left -> top left','13                 matrix[top][l + i] = matrix[bottom - i][l]','14',
+'15                 # bottom right -> bottom left','16                 matrix[bottom - i][l] = matrix[bottom][r - i]','17',
+'18                 # top right -> bottom right','19                 matrix[bottom][r - i] = matrix[top + i][r]','20',
+'21                 # saved topLeft -> top right','22                 matrix[top + i][r] = topLeft','23',
+'24              r -= 1','25              l += 1'];
+const A3=[[1,2,3],[4,5,6],[7,8,9]],A4=[[5,1,9,11],[2,4,8,10],[13,3,6,7],[15,14,12,16]];
+const cp=a=>a.map(r=>r.slice());let steps=[],p=0;
+function build(n){let m=cp(n===3?A3:A4),l=0,r=n-1,s=[];
+const add=(line,msg,why,v,mark={})=>s.push({line,msg,why,v:{...v},m:cp(m),mark});
+add(3,`Initialize l = 0, r = ${r}.`,'l and r mark the left and right boundaries of the current square layer.',{l,r});
+while(l<r){add(5,`Check ${l} < ${r}: True.`,'There is still a layer to rotate.',{l,r});
+for(let i=0;i<r-l;i++){let top=l,bottom=r;add(6,`Start offset i = ${i}.`,'This offset identifies one set of four cells around the current layer.',{l,r,i});
+let t=m[top][l+i];add(10,`Save topLeft = matrix[${top}][${l+i}] = ${t}.`,'This value would be overwritten by the next assignment, so keep it safe.',{l,r,i,top,bottom,topLeft:t},{focus:[[top,l+i]]});
+m[top][l+i]=m[bottom-i][l];add(13,'Copy bottom-left into top-left.','First clockwise move: the left-bottom value moves to the top-left position.',{l,r,i,top,bottom,topLeft:t},{focus:[[top,l+i]]});
+m[bottom-i][l]=m[bottom][r-i];add(16,'Copy bottom-right into bottom-left.','Second move: bottom-right moves to bottom-left.',{l,r,i,top,bottom,topLeft:t},{focus:[[bottom-i,l]]});
+m[bottom][r-i]=m[top+i][r];add(19,'Copy top-right into bottom-right.','Third move: top-right moves to bottom-right.',{l,r,i,top,bottom,topLeft:t},{focus:[[bottom,r-i]]});
+m[top+i][r]=t;add(22,`Place saved topLeft (${t}) into top-right. Four-way cycle complete.`,'The saved value fills the final position. All four values have moved one side clockwise.',{l,r,i,top,bottom,topLeft:t},{saved:[[top+i,r]]});}
+r--;l++;add(24,`Finish layer. Update boundaries: l = ${l}, r = ${r}.`,'Move inward to process the next inner layer.',{l,r});}
+add(5,'Check while condition: False. Stop.','l is no longer less than r. Every layer has been rotated.',{l,r});return s;}
+function render(){let q=steps[p],n=q.m.length;$('count').textContent=`Step ${p+1} / ${steps.length}`;$('msg').textContent=q.msg;$('why').textContent=q.why;
+$('matrix').style.gridTemplateColumns=`repeat(${n},46px)`;$('matrix').innerHTML='';
+q.m.forEach((row,x)=>row.forEach((v,y)=>{let e=document.createElement('div');e.className='cell';if(q.mark.focus?.some(z=>z[0]===x&&z[1]===y))e.classList.add('focus');if(q.mark.saved?.some(z=>z[0]===x&&z[1]===y))e.classList.add('saved');e.textContent=v;$('matrix').appendChild(e)}));
+$('vars').innerHTML=Object.entries(q.v).map(([k,v])=>`<span class="metric">${k} = ${v}</span>`).join('');
+$('code').innerHTML=code.map(x=>`<span class="line ${parseInt(x.trim())===q.line?'active':''}">${x.replaceAll('&','&amp;').replaceAll('<','&lt;')}</span>`).join('');
+$('prev').disabled=p===0;$('next').disabled=p===steps.length-1;}
+function reset(){steps=build(+$('size').value);p=0;render()}
+$('reset').onclick=reset;$('size').onchange=reset;$('prev').onclick=()=>{if(p){p--;render()}};$('next').onclick=()=>{if(p<steps.length-1){p++;render()}};reset();
+</script></body></html>
