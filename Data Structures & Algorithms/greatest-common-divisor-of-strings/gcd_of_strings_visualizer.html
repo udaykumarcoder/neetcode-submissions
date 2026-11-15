@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GCD of Strings Visualizer</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b1020;color:#eaf0ff;font:15px system-ui;padding:20px}main{max-width:1100px;margin:auto}
+header,.panel{background:#141f35;border:1px solid #30415f;border-radius:13px;padding:17px;margin-bottom:15px}
+h1{font-size:25px;margin:0}h2{font-size:17px;margin:0 0 12px}p,.muted{color:#aab8d2}
+.inputs{display:flex;gap:12px;flex-wrap:wrap}.field{flex:1;min-width:210px}label{display:block;color:#aab8d2;font-size:13px;margin-bottom:5px}
+input{width:100%;padding:10px;border-radius:8px;border:1px solid #405273;background:#0b1426;color:white;font-size:16px}
+button{padding:10px 15px;margin:12px 7px 0 0;border:0;border-radius:8px;background:#294365;color:white;font-weight:bold;cursor:pointer}button:disabled{opacity:.35}.primary{background:#087e91}
+.grid{display:grid;grid-template-columns:1fr 1.1fr;gap:15px}.code{background:#081222;padding:12px;border-radius:9px;overflow:auto;font:13px/1.75 monospace;white-space:pre}
+.line{display:block;padding:0 6px;border-left:3px solid transparent}.active{background:#263b5d;border-left-color:#ffbd69}
+.cells{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0 13px}.cell{padding:8px 10px;border:1px solid #3a4b69;border-radius:7px;background:#0b172b;min-width:35px;text-align:center}.candidate{border-color:#ffbd69;background:#49371f}
+.metric{display:inline-block;background:#0b1426;color:#67dbe9;padding:6px 9px;border-radius:7px;margin:4px;font:13px monospace}
+.explain{min-height:55px;color:#bdc9df}.answer{font-size:23px;color:#63d69a;font-weight:bold}.warning{border-left:3px solid #ffbd69;background:#292216;padding:10px 12px;border-radius:5px;color:#f2d8a8}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{text-align:left;padding:7px;border-bottom:1px solid #30415f}th{color:#aab8d2}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+</style></head>
+<body><main>
+<header><h1>Greatest Common Divisor of Strings</h1><p>LeetCode 1071 · Step-by-step Python execution</p></header>
+<section class="panel">
+<div class="inputs"><div class="field"><label>str1</label><input id="s1" value="ABCABC"></div><div class="field"><label>str2</label><input id="s2" value="ABC"></div></div>
+<button class="primary" id="reset">Run / Reset</button><button id="prev">Previous</button><button id="next">Next Step</button><span class="metric" id="counter"></span>
+</section>
+<div class="grid">
+<section class="panel"><h2>String state</h2><div class="explain" id="message"></div>
+<b>str1</b><div class="cells" id="a"></div><b>str2</b><div class="cells" id="b"></div>
+<b>Candidate prefix</b><div class="cells" id="c"></div><div id="values"></div>
+<h3>Test history</h3><div id="history"></div><h3>Answer</h3><div class="answer" id="answer">—</div></section>
+<section class="panel"><h2>Python code · highlighted execution line</h2><div class="code" id="code"></div><h3>Why this line?</h3><div class="explain" id="why"></div></section>
+</div>
+<section class="panel"><h2>Core idea</h2><p>Try prefix lengths from largest to smallest. A length L is possible only when both string lengths divide evenly by L, and repeating the same prefix reconstructs both complete strings.</p>
+<div class="warning"><b>Correction to the screenshot:</b> <code>isDivisor</code> expects an integer length. The call must be <code>isDivisor(L)</code>, not <code>isDivisor(str1[:L])</code>. Passing a substring makes the modulo operation fail with a TypeError.</div></section>
+</main>
+<script>
+const $=x=>document.getElementById(x);
+const lines=[
+'1  class Solution:',
+'2      def gcdOfStrings(self, str1, str2):',
+'3          len1, len2 = len(str1), len(str2)',
+'4',
+'5          def isDivisor(L):',
+'6              if len1 % L or len2 % L:',
+'7                  return False',
+'8              f1, f2 = len1 // L, len2 // L',
+'9              prefix = str1[:L]',
+'10             return prefix * f1 == str1 and prefix * f2 == str2',
+'11',
+'12         for L in range(min(len1, len2), 0, -1):',
+'13             if isDivisor(L):',
+'14                 return str1[:L]',
+'15         return ""'
+];
+let steps=[],pos=0;
+function build(a,b){
+ let s=[],n=a.length,m=b.length;
+ const add=(line,msg,why,L=null,ok=null,result=null)=>s.push({line,msg,why,L,ok,result});
+ add(3,`len1 = ${n}, len2 = ${m}.`,`The candidate block must fit an exact number of times in each string.`);
+ for(let L=Math.min(n,m);L>=1;L--){
+  add(12,`Try L = ${L}. The loop checks candidate lengths from largest to smallest.`,`The answer cannot be longer than the shorter input. Descending order guarantees the first valid candidate is the longest.`,L);
+  if(n%L||m%L){add(6,`Reject L = ${L}: ${n} % ${L} = ${n%L}; ${m} % ${L} = ${m%L}.`,`A non-zero remainder means the string cannot be split into complete blocks of length L.`,L,false);continue;}
+  let p=a.slice(0,L),f1=n/L,f2=m/L;
+  add(8,`Both lengths divide evenly. f1 = ${f1}, f2 = ${f2}.`,`These counts tell us how many times to repeat the candidate prefix.`,L);
+  let ok=p.repeat(f1)===a&&p.repeat(f2)===b;
+  add(10,`Check "${p}" × ${f1} == "${a}" AND "${p}" × ${f2} == "${b}".`,`Equal divisibility is not enough: the actual characters must match in both strings.`,L,ok);
+  if(ok){add(14,`Return "${p}". It is the greatest common divisor string.`,`We tested longer candidates first, so this valid prefix is the longest possible one.`,L,true,p);return s;}
+  add(10,`L = ${L} fails because the repeated prefix does not recreate both strings.`,`Try the next smaller candidate.`,L,false);
+ }
+ add(15,'No non-empty candidate works. Return an empty string.','No shared repeating prefix exists.',null,false,'');return s;
+}
+function draw(id,str,L){$(id).innerHTML='';[...str].forEach((ch,i)=>{let e=document.createElement('span');e.className='cell'+(L&&i<L?' candidate':'');e.textContent=ch;$(id).appendChild(e)});if(!str)$(id).textContent='(empty)'}
+function render(){
+ let q=steps[pos],a=$('s1').value,b=$('s2').value;
+ $('counter').textContent=`Step ${pos+1} / ${steps.length}`;$('message').textContent=q.msg;$('why').textContent=q.why;
+ $('code').innerHTML=lines.map(x=>`<span class="line ${Number(x.trim().split(/\\s+/)[0])===q.line?'active':''}">${x.replaceAll('&','&amp;').replaceAll('<','&lt;')}</span>`).join('');
+ draw('a',a,q.L);draw('b',b,q.L);draw('c',q.L?a.slice(0,q.L):' ',null);
+ $('values').innerHTML=q.L?`<span class="metric">L = ${q.L}</span><span class="metric">len1 % L = ${a.length%q.L}</span><span class="metric">len2 % L = ${b.length%q.L}</span>`:'';
+ let h=steps.slice(0,pos+1).filter(x=>x.ok!==null);$('history').innerHTML=h.length?'<table><tr><th>Candidate L</th><th>Outcome</th></tr>'+h.map(x=>`<tr><td>${x.L}</td><td>${x.ok?'Valid':'Rejected'}</td></tr>`).join('')+'</table>':'Not tested yet';
+ $('answer').textContent=q.result!==null?`"${q.result}"`:'Not found yet';$('prev').disabled=pos===0;$('next').disabled=pos===steps.length-1;
+}
+function reset(){steps=build($('s1').value,$('s2').value);pos=0;render()}
+$('reset').onclick=reset;$('prev').onclick=()=>{if(pos){pos--;render()}};$('next').onclick=()=>{if(pos<steps.length-1){pos++;render()}};reset();
+</script></body></html>
