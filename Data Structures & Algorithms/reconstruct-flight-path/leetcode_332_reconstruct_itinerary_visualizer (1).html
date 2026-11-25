@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeetCode 332: Reconstruct Itinerary — Algorithm Visualizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #121215;
+      color: #e4e4e7;
+      font-family: 'Inter', sans-serif;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #18181b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #3f3f46;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #52525b;
+    }
+    .code-line {
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .graph-node {
+      cursor: grab;
+      transition: filter 0.2s ease;
+    }
+    .graph-node:active {
+      cursor: grabbing;
+    }
+    @keyframes nodePulseAmber {
+      0%, 100% { filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.55)); }
+      50% { filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.95)); }
+    }
+    @keyframes nodePulseEmerald {
+      0%, 100% { filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.55)); }
+      50% { filter: drop-shadow(0 0 15px rgba(52, 211, 153, 0.95)); }
+    }
+    .active-node-glow {
+      animation: nodePulseAmber 1.6s infinite;
+    }
+    .finalized-node-glow {
+      animation: nodePulseEmerald 1.5s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- Top Header & Presets -->
+  <header class="bg-[#18181c] border-b border-[#2b2b33] px-4 py-3 sticky top-0 z-30">
+    <div class="max-w-[1600px] mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <!-- Title & Difficulty -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-amber-500 flex items-center justify-center font-mono font-bold text-zinc-950 shadow-md shrink-0">
+          332
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-base sm:text-lg font-bold text-zinc-100 tracking-tight">
+              Reconstruct Itinerary
+            </h1>
+            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              Hard • Hierholzer's Algorithm (Post-Order DFS)
+            </span>
+          </div>
+          <p class="text-xs text-zinc-400">
+            Consume flights via <code class="text-sky-300 font-mono">adj[airport].pop()</code> and append airports to <code class="text-emerald-300 font-mono">route</code> in post-order, then reverse (<code class="text-amber-300 font-mono">route[::-1]</code>)
+          </p>
+        </div>
+      </div>
+
+      <!-- Preset Buttons & Custom Modal Trigger -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-medium text-zinc-400 mr-1">Presets:</span>
+        <button onclick="loadPreset(0)" id="preset-0" class="preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border transition cursor-pointer">
+          Ex 1 (Dead-end Trap!)
+        </button>
+        <button onclick="loadPreset(1)" id="preset-1" class="preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border transition cursor-pointer">
+          Ex 2 (Multi-loop)
+        </button>
+        <button onclick="loadPreset(2)" id="preset-2" class="preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border transition cursor-pointer">
+          Ex 3 (Linear Chain)
+        </button>
+        <button onclick="toggleCustomModal()" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition cursor-pointer flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+          </svg>
+          Custom Tickets
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Custom Tickets Modal -->
+  <div id="custom-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-[#1b1b20] border border-[#32323c] rounded-2xl max-w-lg w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold text-zinc-100">Custom Flight Tickets Input</h3>
+        <button onclick="toggleCustomModal()" class="text-zinc-400 hover:text-zinc-200 p-1 rounded-lg cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <p class="text-xs text-zinc-400 mb-3">
+        Enter a JSON array of <code class="text-zinc-200">["SRC", "DST"]</code> pairs (3-letter IATA codes). Must include at least one departure from <code class="text-amber-300">"JFK"</code>.
+      </p>
+      <textarea id="custom-tickets-input" rows="4"
+        class="w-full bg-zinc-950 border border-zinc-700 focus:border-amber-500 rounded-xl p-3 text-xs font-mono text-zinc-100 outline-none resize-none"
+        placeholder='[["JFK","KUL"],["JFK","NRT"],["NRT","JFK"]]'></textarea>
+      <p id="custom-tickets-error" class="text-xs text-rose-400 mt-2 hidden"></p>
+      <div class="flex items-center justify-end gap-2 mt-4">
+        <button onclick="toggleCustomModal()" class="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition cursor-pointer">
+          Cancel
+        </button>
+        <button onclick="applyCustomTickets()" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 transition cursor-pointer">
+          Load & Visualize
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Playback Controls & Step Explanation Banner -->
+  <section class="bg-[#16161a] border-b border-[#2b2b33] px-4 py-3">
+    <div class="max-w-[1600px] mx-auto flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+      <!-- Playback Controls -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="resetVisualizer()" title="Reset (R)" class="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition cursor-pointer" aria-label="Reset">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+
+        <button onclick="stepBackward()" id="btn-prev" title="Step Backward (Left Arrow)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:pointer-events-none text-zinc-200 border border-zinc-700 text-xs font-medium flex items-center gap-1 transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Prev
+        </button>
+
+        <button onclick="togglePlay()" id="btn-play" title="Play / Pause (Space)" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer min-w-[92px] justify-center">
+          <svg id="icon-play" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path>
+          </svg>
+          <svg id="icon-pause" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M5.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75A.75.75 0 007.25 3h-1.5zM12.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75a.75.75 0 00-.75-.75h-1.5z"></path>
+          </svg>
+          <span id="play-label">Play</span>
+        </button>
+
+        <button onclick="stepForward()" id="btn-next" title="Step Forward (Right Arrow)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:pointer-events-none text-zinc-200 border border-zinc-700 text-xs font-medium flex items-center gap-1 transition cursor-pointer">
+          Next
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+
+        <!-- Step Counter -->
+        <div class="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300">
+          Step <span id="step-current" class="text-amber-400 font-bold">0</span> / <span id="step-total">0</span>
+        </div>
+
+        <!-- Speed Slider (0.5x to 3.0x) -->
+        <div class="flex items-center gap-2 ml-1 bg-zinc-900/90 border border-zinc-800 rounded-lg px-3 py-1">
+          <span class="text-[11px] text-zinc-400">Speed</span>
+          <input id="speed-slider" type="range" min="1" max="5" value="3" class="w-20 accent-amber-500 cursor-pointer" />
+          <span id="speed-label" class="text-[11px] font-mono text-zinc-300 w-8">1.0x</span>
+        </div>
+      </div>
+
+      <!-- Status Badge + Explanation -->
+      <div id="explanation-banner" class="flex-1 bg-[#1e1e26] border border-[#32323e] rounded-xl px-3.5 py-2 flex items-center gap-3 min-h-[44px]">
+        <span id="step-badge" class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold uppercase tracking-wider bg-sky-500/15 text-sky-400 border border-sky-500/30 shrink-0">
+          SORT REVERSE
+        </span>
+        <p id="explanation-text" class="text-xs sm:text-sm text-zinc-200 leading-snug">
+          Sort tickets in reverse so the lexicographically smallest destination sits at the end for O(1) pop().
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+    <!-- LEFT COLUMN (7 cols): Graph Canvas, Post-Order Route & Reversed Preview, Adjacency List & Call Stack -->
+    <div class="lg:col-span-7 flex flex-col gap-4">
+
+      <!-- Directed Graph Canvas Card -->
+      <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 sm:p-5 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-semibold text-zinc-100">Flight Network Graph</h2>
+            <span id="tickets-meta-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+              3 tickets
+            </span>
+            <span class="text-[11px] text-zinc-500 hidden sm:inline">• Drag airports to rearrange</span>
+          </div>
+
+          <!-- Edge & Node Legend -->
+          <div class="flex flex-wrap items-center gap-2.5 text-[11px] text-zinc-400">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-500/30 border border-sky-400 inline-block"></span> Available</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500/35 border border-amber-400 inline-block"></span> Active / Traversing</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-zinc-700/60 border border-zinc-500 inline-block"></span> Consumed</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500/35 border border-emerald-400 inline-block"></span> Added to route</span>
+          </div>
+        </div>
+
+        <!-- Interactive SVG Canvas -->
+        <div class="relative w-full bg-[#121216] border border-[#26262e] rounded-xl overflow-hidden select-none">
+          <svg id="graph-svg" viewBox="0 0 680 315" class="w-full h-[285px] sm:h-[315px] block touch-none"></svg>
+        </div>
+
+        <!-- Dual Route Ribbon: Post-Order `route` vs Reversed `route[::-1]` -->
+        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Post-order route -->
+          <div class="bg-[#121216] border border-[#2a2a32] rounded-xl p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold font-mono text-emerald-300">route (Post-Order Append)</span>
+              <span id="route-count-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                0 / 4
+              </span>
+            </div>
+            <div id="route-ribbon" class="flex flex-wrap items-center gap-1.5 min-h-[32px]">
+              <!-- Post-order items -->
+            </div>
+          </div>
+
+          <!-- Reversed route[::-1] -->
+          <div class="bg-[#121216] border border-[#2a2a32] rounded-xl p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold font-mono text-amber-300">route[::-1] (Final Itinerary)</span>
+              <span class="text-[10px] font-mono text-zinc-500">Live Reversed View</span>
+            </div>
+            <div id="reversed-ribbon" class="flex flex-wrap items-center gap-1.5 min-h-[32px]">
+              <!-- Reversed items -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Left Split: Adjacency Stack (`adj`) & DFS Call Stack -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <!-- Adjacency Stack (`adj`) -->
+        <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 shadow-lg flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 font-mono">adj (Reverse-Sorted)</h3>
+            </div>
+            <span class="text-[11px] font-mono text-sky-400">pop() from right →</span>
+          </div>
+          <p class="text-[11px] text-zinc-500 mb-2">Rightmost item is smallest alphabetically and pops in <code class="text-zinc-300">O(1)</code></p>
+
+          <div id="adj-container" class="flex flex-col gap-1.5 min-h-[120px] max-h-[210px] overflow-y-auto p-2 rounded-xl bg-[#121216] border border-[#26262e] font-mono text-xs">
+            <!-- Adjacency rows rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- DFS Call Stack -->
+        <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 shadow-lg flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 font-mono">DFS Call Stack</h3>
+            </div>
+            <span id="stack-depth-badge" class="text-[11px] font-mono text-zinc-400">depth = 0</span>
+          </div>
+          <p class="text-[11px] text-zinc-500 mb-2">Unwinds when <code class="text-zinc-300">while adj[airport]:</code> becomes empty</p>
+          <div id="callstack-container" class="flex flex-col gap-1.5 min-h-[120px] max-h-[210px] overflow-y-auto p-2 rounded-xl bg-[#121216] border border-[#26262e] font-mono text-xs">
+            <!-- Stack frames rendered dynamically -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN (5 cols): Local Variables & Python Code Viewer -->
+    <div class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- Local Variables Card -->
+      <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300">Local Variables</h3>
+          <span class="text-[11px] font-mono text-zinc-500">Current Frame</span>
+        </div>
+        <div class="grid grid-cols-4 gap-2 font-mono text-center">
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">airport</div>
+            <div id="var-airport" class="text-sm font-bold text-amber-400 mt-0.5">—</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">nxt</div>
+            <div id="var-nxt" class="text-sm font-bold text-sky-400 mt-0.5">—</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">len(route)</div>
+            <div id="var-len-route" class="text-sm font-bold text-emerald-400 mt-0.5">0</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">target</div>
+            <div id="var-target" class="text-sm font-bold text-zinc-200 mt-0.5">4</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Python Code Panel (Exact 17 lines of Hierholzer's Algorithm) -->
+      <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl overflow-hidden shadow-xl">
+        <div class="bg-[#202026] border-b border-[#2e2e36] px-4 py-2.5 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+            </div>
+            <span class="text-xs font-mono text-zinc-300 ml-2">solution.py</span>
+          </div>
+          <span class="text-[11px] font-mono text-emerald-400">O(E log E) Time • No TLE</span>
+        </div>
+
+        <div id="code-container" class="py-2 font-mono text-[12px] sm:text-[13px] leading-[1.7] overflow-x-auto select-text">
+          <!-- 17 lines rendered via JS -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // =========================================================================
+    // 1. EXACT PYTHON SOURCE CODE (Hierholzer's Post-Order DFS)
+    // =========================================================================
+    const PYTHON_LINES = [
+      { num: 1,  html: '<span class="text-sky-400">class</span> <span class="text-emerald-300">Solution</span>:' },
+      { num: 2,  html: '    <span class="text-sky-400">def</span> <span class="text-amber-200">findItinerary</span>(<span class="text-orange-300">self</span>, tickets: List[List[<span class="text-emerald-300">str</span>]]) -&gt; List[<span class="text-emerald-300">str</span>]:' },
+      { num: 3,  html: '        adj = defaultdict(<span class="text-amber-200">list</span>)' },
+      { num: 4,  html: '        <span class="text-zinc-500"># Sort in reverse so we can pop the smallest destination from the end in O(1)</span>' },
+      { num: 5,  html: '        <span class="text-purple-400">for</span> src, dst <span class="text-purple-400">in</span> <span class="text-amber-200">sorted</span>(tickets, reverse=<span class="text-sky-400">True</span>):' },
+      { num: 6,  html: '            adj[src].append(dst)' },
+      { num: 7,  html: '' },
+      { num: 8,  html: '        route = []' },
+      { num: 9,  html: '' },
+      { num: 10, html: '        <span class="text-sky-400">def</span> <span class="text-amber-200">dfs</span>(airport: <span class="text-emerald-300">str</span>) -&gt; <span class="text-sky-400">None</span>:' },
+      { num: 11, html: '            <span class="text-purple-400">while</span> adj[airport]:' },
+      { num: 12, html: '                nxt = adj[airport].pop()' },
+      { num: 13, html: '                dfs(nxt)' },
+      { num: 14, html: '            route.append(airport)' },
+      { num: 15, html: '' },
+      { num: 16, html: '        dfs(<span class="text-amber-300">"JFK"</span>)' },
+      { num: 17, html: '        <span class="text-purple-400">return</span> route[::-<span class="text-purple-300">1</span>]' }
+    ];
+
+    // =========================================================================
+    // 2. PRESETS & GLOBAL STATE
+    // =========================================================================
+    const PRESETS = [
+      {
+        name: 'Ex 1 (Dead-end Trap!)',
+        tickets: [['JFK', 'KUL'], ['JFK', 'NRT'], ['NRT', 'JFK']],
+        positions: {
+          KUL: { x: 145, y: 158 },
+          JFK: { x: 340, y: 158 },
+          NRT: { x: 535, y: 158 }
+        }
+      },
+      {
+        name: 'Ex 2 (Multi-loop)',
+        tickets: [['JFK', 'SFO'], ['JFK', 'ATL'], ['SFO', 'ATL'], ['ATL', 'JFK'], ['ATL', 'SFO']],
+        positions: {
+          JFK: { x: 155, y: 158 },
+          ATL: { x: 385, y: 72 },
+          SFO: { x: 385, y: 245 }
+        }
+      },
+      {
+        name: 'Ex 3 (Linear Chain)',
+        tickets: [['MUC', 'LHR'], ['JFK', 'MUC'], ['SFO', 'SJC'], ['LHR', 'SFO']],
+        positions: {
+          JFK: { x: 85,  y: 158 },
+          MUC: { x: 215, y: 102 },
+          LHR: { x: 345, y: 212 },
+          SFO: { x: 475, y: 102 },
+          SJC: { x: 600, y: 158 }
+        }
+      }
+    ];
+
+    let currentTickets = [];
+    let airportPositions = {};
+    let activePresetIndex = 0;
+    let steps = [];
+    let currentStepIdx = 0;
+    let isPlaying = false;
+    let playTimer = null;
+    let draggingAirport = null;
+
+    const SPEED_MAP = {
+      1: { label: '0.5x', ms: 1550 },
+      2: { label: '0.75x', ms: 1050 },
+      3: { label: '1.0x', ms: 700 },
+      4: { label: '1.75x', ms: 380 },
+      5: { label: '3.0x', ms: 200 }
+    };
+
+    // =========================================================================
+    // 3. HIERHOLZER'S ALGORITHM TRACE GENERATOR
+    // =========================================================================
+    function generateTrace(rawTickets) {
+      const recordedSteps = [];
+      const targetLen = rawTickets.length + 1;
+
+      // Sort in reverse lexicographical order: sorted(tickets, reverse=True)
+      const revSortedTickets = rawTickets.map(t => [...t]).sort((a, b) => {
+        if (a[0] !== b[0]) return b[0].localeCompare(a[0]);
+        return b[1].localeCompare(a[1]);
+      });
+
+      // Collect all airport keys so defaultdict(list) displays empty lists cleanly
+      const allAirports = new Set(['JFK']);
+      for (const [u, v] of revSortedTickets) {
+        allAirports.add(u);
+        allAirports.add(v);
+      }
+
+      const adj = {};
+      for (const code of allAirports) {
+        adj[code] = [];
+      }
+
+      // Edge pool tracking each flight ticket
+      // status: 'available' | 'traversing' | 'consumed'
+      const edgeInstances = revSortedTickets.map(([from, to], idx) => ({
+        id: idx,
+        from,
+        to,
+        status: 'available',
+        popOrder: null
+      }));
+
+      let popCounter = 0;
+
+      const cloneAdj = () => {
+        const copy = {};
+        for (const k of Object.keys(adj)) {
+          copy[k] = [...adj[k]];
+        }
+        return copy;
+      };
+
+      const cloneEdges = () => edgeInstances.map(e => ({ ...e }));
+
+      // Step 0: Lines 3, 5, 6 (Build reverse-sorted adjacency list)
+      for (const [src, dst] of revSortedTickets) {
+        adj[src].push(dst);
+      }
+
+      recordedSteps.push({
+        lines: [3, 5, 6],
+        lineTheme: 'amber',
+        badge: 'REVERSE SORT',
+        badgeColor: 'sky',
+        explanation: `Sort tickets in reverse and populate <code class="font-mono text-sky-300">adj</code>. Now the lexicographically smallest flight for each airport sits at the end (<code class="font-mono text-amber-300">adj[src][-1]</code>) for O(1) <code class="font-mono">pop()</code>.`,
+        vars: { airport: '—', nxt: '—', lenRoute: 0, target: targetLen },
+        adj: cloneAdj(),
+        route: [],
+        callStack: [],
+        activeAirport: null,
+        finalizedAirport: null,
+        edges: cloneEdges(),
+        adjHighlight: null
+      });
+
+      // Step 1: Lines 8 & 16 (route = [], dfs("JFK"))
+      const route = [];
+      const callStack = [];
+
+      recordedSteps.push({
+        lines: [8, 16],
+        lineTheme: 'amber',
+        badge: 'START DFS',
+        badgeColor: 'amber',
+        explanation: `Initialize empty post-order list <code class="font-mono text-emerald-300">route = []</code> and start <code class="font-mono text-amber-300">dfs("JFK")</code>.`,
+        vars: { airport: '"JFK"', nxt: '—', lenRoute: 0, target: targetLen },
+        adj: cloneAdj(),
+        route: [],
+        callStack: [],
+        activeAirport: 'JFK',
+        finalizedAirport: null,
+        edges: cloneEdges(),
+        adjHighlight: null
+      });
+
+      function pushStep({
+        lines,
+        lineTheme = 'amber',
+        badge,
+        badgeColor,
+        explanation,
+        airport,
+        nxt = '—',
+        activeAirport = airport,
+        finalizedAirport = null,
+        adjHighlight = null
+      }) {
+        recordedSteps.push({
+          lines,
+          lineTheme,
+          badge,
+          badgeColor,
+          explanation,
+          vars: {
+            airport: airport ? `"${airport}"` : '—',
+            nxt: nxt !== '—' ? `"${nxt}"` : '—',
+            lenRoute: route.length,
+            target: targetLen
+          },
+          adj: cloneAdj(),
+          route: [...route],
+          callStack: [...callStack],
+          activeAirport,
+          finalizedAirport,
+          edges: cloneEdges(),
+          adjHighlight
+        });
+      }
+
+      function dfs(airport) {
+        callStack.push(airport);
+
+        pushStep({
+          lines: [10],
+          badge: 'ENTER DFS',
+          badgeColor: 'amber',
+          explanation: `Enter <code class="font-mono text-amber-300">dfs("${airport}")</code>. Outgoing flights remaining: <code class="font-mono text-sky-300">[${adj[airport].map(x => `"${x}"`).join(', ')}]</code>.`,
+          airport
+        });
+
+        while (adj[airport].length > 0) {
+          // Mark any previous 'traversing' edge as 'consumed'
+          edgeInstances.forEach(e => {
+            if (e.status === 'traversing') e.status = 'consumed';
+          });
+
+          const nxt = adj[airport].pop();
+          popCounter += 1;
+
+          // Find matching available edge instance
+          const edgeObj = edgeInstances.find(
+            e => e.from === airport && e.to === nxt && e.status === 'available'
+          );
+          if (edgeObj) {
+            edgeObj.status = 'traversing';
+            edgeObj.popOrder = popCounter;
+          }
+
+          pushStep({
+            lines: [11, 12],
+            lineTheme: 'amber',
+            badge: 'POP SMALLEST',
+            badgeColor: 'sky',
+            explanation: `<code class="font-mono text-sky-300">adj["${airport}"]</code> is non-empty → pop rightmost (smallest) destination <code class="font-mono text-sky-300">nxt = "${nxt}"</code> in O(1).`,
+            airport,
+            nxt,
+            adjHighlight: { src: airport, popped: nxt }
+          });
+
+          pushStep({
+            lines: [13],
+            lineTheme: 'amber',
+            badge: 'RECURSE',
+            badgeColor: 'purple',
+            explanation: `Follow flight <code class="font-mono text-purple-300">${airport} → ${nxt}</code> by calling <code class="font-mono text-amber-300">dfs("${nxt}")</code>.`,
+            airport,
+            nxt,
+            activeAirport: nxt
+          });
+
+          dfs(nxt);
+        }
+
+        // Mark any traversing edge as consumed before post-order append
+        edgeInstances.forEach(e => {
+          if (e.status === 'traversing') e.status = 'consumed';
+        });
+
+        // Line 14: Post-order append when while adj[airport] is exhausted
+        route.push(airport);
+
+        pushStep({
+          lines: [11, 14],
+          lineTheme: 'emerald',
+          badge: 'POST-ORDER APPEND',
+          badgeColor: 'emerald',
+          explanation: `<code class="font-mono text-zinc-300">adj["${airport}"]</code> is empty! All outgoing flights from <code class="font-mono text-emerald-300">"${airport}"</code> are done — append <code class="font-mono text-emerald-300">"${airport}"</code> to <code class="font-mono">route</code>.`,
+          airport,
+          activeAirport: airport,
+          finalizedAirport: airport
+        });
+
+        callStack.pop();
+      }
+
+      dfs('JFK');
+
+      // Line 17: return route[::-1]
+      const finalItinerary = [...route].reverse();
+      recordedSteps.push({
+        lines: [17],
+        lineTheme: 'emerald',
+        badge: 'REVERSE & RETURN',
+        badgeColor: 'emerald',
+        explanation: `DFS finished! Reverse post-order <code class="font-mono text-emerald-300">route</code> via <code class="font-mono text-amber-300">route[::-1]</code> → <code class="font-mono text-amber-300 font-bold">[${finalItinerary.map(x => `"${x}"`).join(', ')}]</code>.`,
+        vars: { airport: '—', nxt: '—', lenRoute: route.length, target: targetLen },
+        adj: cloneAdj(),
+        route: [...route],
+        callStack: [],
+        activeAirport: null,
+        finalizedAirport: null,
+        edges: cloneEdges(),
+        adjHighlight: null,
+        isComplete: true
+      });
+
+      return recordedSteps;
+    }
+
+    // =========================================================================
+    // 4. LAYOUT & SVG GRAPH RENDERING
+    // =========================================================================
+    function computeAirportPositions(tickets) {
+      const airportSet = new Set(['JFK']);
+      for (const [u, v] of tickets) {
+        airportSet.add(u);
+        airportSet.add(v);
+      }
+      const airports = Array.from(airportSet);
+      const n = airports.length;
+      const cx = 340, cy = 158;
+      const rx = n <= 3 ? 195 : 235;
+      const ry = n <= 3 ? 95 : 110;
+      const pos = {};
+
+      airports.forEach((code, idx) => {
+        const angle = Math.PI + (idx * 2 * Math.PI) / n;
+        pos[code] = {
+          x: Math.round(cx + rx * Math.cos(angle)),
+          y: Math.round(cy + ry * Math.sin(angle))
+        };
+      });
+      return pos;
+    }
+
+    function renderCodePanel() {
+      const container = document.getElementById('code-container');
+      container.innerHTML = PYTHON_LINES.map(line => `
+        <div id="code-line-${line.num}" class="code-line flex items-start px-3 py-0.5 border-l-2 border-transparent">
+          <span class="w-7 text-right pr-3 text-zinc-600 select-none shrink-0 text-xs leading-[1.7]">${line.num}</span>
+          <pre class="whitespace-pre text-zinc-200">${line.html || ' '}</pre>
+        </div>
+      `).join('');
+    }
+
+    function renderGraphSVG(step) {
+      const svg = document.getElementById('graph-svg');
+      const nodeRadius = 26;
+
+      // Group edges by unordered endpoint pair so parallel / bidirectional edges curve cleanly
+      const pairGroups = {};
+      step.edges.forEach((edge, idx) => {
+        const pairKey = [edge.from, edge.to].sort().join('__');
+        if (!pairGroups[pairKey]) pairGroups[pairKey] = [];
+        pairGroups[pairKey].push(idx);
+      });
+
+      const defs = `
+        <defs>
+          <marker id="arrow-avail" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 z" fill="#38bdf8" />
+          </marker>
+          <marker id="arrow-trav" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#fbbf24" />
+          </marker>
+          <marker id="arrow-consumed" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 z" fill="#52525b" />
+          </marker>
+        </defs>
+      `;
+
+      let edgesMarkup = '';
+
+      step.edges.forEach((edge, idx) => {
+        const p1 = airportPositions[edge.from];
+        const p2 = airportPositions[edge.to];
+        if (!p1 || !p2) return;
+
+        const pairKey = [edge.from, edge.to].sort().join('__');
+        const group = pairGroups[pairKey];
+        const posInGroup = group.indexOf(idx);
+        const totalInGroup = group.length;
+
+        const [canonA] = [edge.from, edge.to].sort();
+        const dirSign = edge.from === canonA ? 1 : -1;
+
+        let curveOffset = 0;
+        if (totalInGroup > 1) {
+          const spread = (posInGroup - (totalInGroup - 1) / 2) * 44;
+          curveOffset = spread * dirSign;
+        }
+
+        let stroke = '#38bdf8';
+        let strokeOpacity = '0.7';
+        let strokeWidth = '2.2';
+        let marker = 'url(#arrow-avail)';
+        let dash = '';
+
+        if (edge.status === 'traversing') {
+          stroke = '#fbbf24';
+          strokeOpacity = '1';
+          strokeWidth = '3.4';
+          marker = 'url(#arrow-trav)';
+        } else if (edge.status === 'consumed') {
+          stroke = '#52525b';
+          strokeOpacity = '0.55';
+          strokeWidth = '1.8';
+          marker = 'url(#arrow-consumed)';
+          dash = '4 4';
+        }
+
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const ux = dx / dist;
+        const uy = dy / dist;
+
+        let mx, my;
+
+        if (Math.abs(curveOffset) > 1) {
+          const nx = -uy;
+          const ny = ux;
+          const ctrlX = (p1.x + p2.x) / 2 + nx * curveOffset;
+          const ctrlY = (p1.y + p2.y) / 2 + ny * curveOffset;
+
+          const sDx = ctrlX - p1.x;
+          const sDy = ctrlY - p1.y;
+          const sLen = Math.hypot(sDx, sDy) || 1;
+          const x1 = p1.x + (sDx / sLen) * (nodeRadius + 2);
+          const y1 = p1.y + (sDy / sLen) * (nodeRadius + 2);
+
+          const eDx = p2.x - ctrlX;
+          const eDy = p2.y - ctrlY;
+          const eLen = Math.hypot(eDx, eDy) || 1;
+          const x2 = p2.x - (eDx / eLen) * (nodeRadius + 5);
+          const y2 = p2.y - (eDy / eLen) * (nodeRadius + 5);
+
+          mx = 0.25 * p1.x + 0.5 * ctrlX + 0.25 * p2.x;
+          my = 0.25 * p1.y + 0.5 * ctrlY + 0.25 * p2.y;
+
+          edgesMarkup += `
+            <path d="M ${x1} ${y1} Q ${ctrlX} ${ctrlY} ${x2} ${y2}"
+              fill="none" stroke="${stroke}" stroke-opacity="${strokeOpacity}" stroke-width="${strokeWidth}"
+              ${dash ? `stroke-dasharray="${dash}"` : ''} marker-end="${marker}" />
+          `;
+        } else {
+          const x1 = p1.x + ux * (nodeRadius + 2);
+          const y1 = p1.y + uy * (nodeRadius + 2);
+          const x2 = p2.x - ux * (nodeRadius + 5);
+          const y2 = p2.y - uy * (nodeRadius + 5);
+          mx = (x1 + x2) / 2;
+          my = (y1 + y2) / 2;
+
+          edgesMarkup += `
+            <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+              stroke="${stroke}" stroke-opacity="${strokeOpacity}" stroke-width="${strokeWidth}"
+              ${dash ? `stroke-dasharray="${dash}"` : ''} marker-end="${marker}" />
+          `;
+        }
+
+        // Badge showing pop traversal order (#1, #2...) once popped
+        if (edge.popOrder !== null) {
+          const isTrav = edge.status === 'traversing';
+          edgesMarkup += `
+            <g transform="translate(${mx}, ${my})">
+              <rect x="-13" y="-10" width="26" height="20" rx="6"
+                fill="${isTrav ? '#451a03' : '#18181b'}"
+                stroke="${isTrav ? '#fbbf24' : '#52525b'}" stroke-width="1.3" />
+              <text x="0" y="4" text-anchor="middle"
+                fill="${isTrav ? '#fef3c7' : '#a1a1aa'}"
+                font-size="10" font-family="JetBrains Mono, monospace" font-weight="700">pop#${edge.popOrder}</text>
+            </g>
+          `;
+        }
+      });
+
+      // Render Airport Nodes
+      const inRouteSet = new Set(step.route);
+      const onStackSet = new Set(step.callStack);
+      let nodesMarkup = '';
+
+      for (const [code, pos] of Object.entries(airportPositions)) {
+        const isFinalizedNow = step.finalizedAirport === code;
+        const isActive = step.activeAirport === code;
+        const isInRoute = inRouteSet.has(code);
+        const isOnStack = onStackSet.has(code);
+
+        let fill = '#18181b';
+        let stroke = '#52525b';
+        let strokeW = '2';
+        let textFill = '#f4f4f5';
+        let extraClass = 'graph-node';
+
+        if (isFinalizedNow) {
+          fill = '#064e3b';
+          stroke = '#34d399';
+          strokeW = '3';
+          textFill = '#d1fae5';
+          extraClass += ' finalized-node-glow';
+        } else if (isActive) {
+          fill = '#451a03';
+          stroke = '#fbbf24';
+          strokeW = '3';
+          textFill = '#fef3c7';
+          extraClass += ' active-node-glow';
+        } else if (isInRoute) {
+          fill = '#064e3b';
+          stroke = '#34d399';
+          strokeW = '2.4';
+          textFill = '#d1fae5';
+        } else if (isOnStack) {
+          fill = '#2e1065';
+          stroke = '#c084fc';
+          strokeW = '2.2';
+          textFill = '#f3e8ff';
+        }
+
+        nodesMarkup += `
+          <g class="${extraClass}" data-airport="${code}" transform="translate(${pos.x}, ${pos.y})">
+            ${code === 'JFK' ? `
+              <rect x="-22" y="-44" width="44" height="15" rx="4" fill="#f59e0b" />
+              <text x="0" y="-33.5" text-anchor="middle" fill="#18181b" font-size="9" font-family="JetBrains Mono, monospace" font-weight="800">START</text>
+            ` : ''}
+            <circle r="${nodeRadius}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" />
+            <text x="0" y="4.5" text-anchor="middle" fill="${textFill}" font-size="13" font-family="JetBrains Mono, monospace" font-weight="700">${code}</text>
+          </g>
+        `;
+      }
+
+      svg.innerHTML = defs + edgesMarkup + nodesMarkup;
+    }
+
+    // =========================================================================
+    // 5. UI SYNCHRONIZATION
+    // =========================================================================
+    function updateUI() {
+      const step = steps[currentStepIdx];
+      if (!step) return;
+
+      const totalTickets = currentTickets.length;
+      document.getElementById('tickets-meta-badge').textContent = `${totalTickets} ticket${totalTickets === 1 ? '' : 's'}`;
+
+      // 1. Step Counter & Buttons
+      document.getElementById('step-current').textContent = currentStepIdx;
+      document.getElementById('step-total').textContent = steps.length - 1;
+      document.getElementById('btn-prev').disabled = currentStepIdx === 0;
+      document.getElementById('btn-next').disabled = currentStepIdx === steps.length - 1;
+
+      // 2. Status Badge & Explanation
+      const badgeEl = document.getElementById('step-badge');
+      badgeEl.textContent = step.badge;
+      const badgeStyles = {
+        sky: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+        amber: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+        emerald: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+        purple: 'bg-purple-500/15 text-purple-400 border-purple-500/30'
+      };
+      badgeEl.className = `px-2 py-0.5 rounded text-[11px] font-mono font-semibold uppercase tracking-wider border shrink-0 ${badgeStyles[step.badgeColor] || badgeStyles.sky}`;
+      document.getElementById('explanation-text').innerHTML = step.explanation;
+
+      // 3. Code Line Highlighting
+      PYTHON_LINES.forEach(line => {
+        const el = document.getElementById(`code-line-${line.num}`);
+        if (!el) return;
+        el.classList.remove(
+          'bg-amber-500/15', 'border-amber-400',
+          'bg-emerald-500/15', 'border-emerald-400',
+          'border-transparent'
+        );
+
+        if (step.lines.includes(line.num)) {
+          if (step.lineTheme === 'emerald') {
+            el.classList.add('bg-emerald-500/15', 'border-emerald-400');
+          } else {
+            el.classList.add('bg-amber-500/15', 'border-amber-400');
+          }
+        } else {
+          el.classList.add('border-transparent');
+        }
+      });
+
+      // 4. Local Variables
+      document.getElementById('var-airport').textContent = step.vars.airport;
+      document.getElementById('var-nxt').textContent = step.vars.nxt;
+      document.getElementById('var-len-route').textContent = step.vars.lenRoute;
+      document.getElementById('var-target').textContent = step.vars.target;
+
+      // 5. Post-Order `route` & Reversed `route[::-1]` Ribbons
+      document.getElementById('route-count-badge').textContent = `${step.route.length} / ${totalTickets + 1}`;
+      const routeRibbon = document.getElementById('route-ribbon');
+      const reversedRibbon = document.getElementById('reversed-ribbon');
+
+      if (step.route.length === 0) {
+        routeRibbon.innerHTML = '<span class="text-xs font-mono text-zinc-600 italic">[] (appends on DFS unwind)</span>';
+        reversedRibbon.innerHTML = '<span class="text-xs font-mono text-zinc-600 italic">[]</span>';
+      } else {
+        routeRibbon.innerHTML = step.route.map((code, idx) => {
+          const isNewest = idx === step.route.length - 1 && !step.isComplete;
+          return `
+            <span class="px-2 py-0.5 rounded-md font-mono text-xs border ${
+              isNewest
+                ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200 font-bold'
+                : 'bg-zinc-900 border-zinc-700 text-zinc-300'
+            }">"${code}"</span>
+            ${idx < step.route.length - 1 ? '<span class="text-zinc-600 font-mono text-xs">,</span>' : ''}
+          `;
+        }).join('');
+
+        const rev = [...step.route].reverse();
+        reversedRibbon.innerHTML = rev.map((code, idx) => `
+          <span class="px-2 py-0.5 rounded-md font-mono text-xs border ${
+            step.isComplete
+              ? 'bg-amber-500/20 border-amber-400 text-amber-200 font-bold'
+              : 'bg-zinc-900 border-zinc-700 text-amber-200/90'
+          }">"${code}"</span>
+          ${idx < rev.length - 1 ? '<span class="text-zinc-500 font-mono text-xs">→</span>' : ''}
+        `).join('');
+      }
+
+      // 6. Reverse-Sorted Adjacency Stacks (`adj`)
+      const adjContainer = document.getElementById('adj-container');
+      const sortedKeys = Object.keys(step.adj).sort();
+      adjContainer.innerHTML = sortedKeys.map(srcKey => {
+        const list = step.adj[srcKey];
+        const isCurrentSrc = step.activeAirport === srcKey;
+        const hl = step.adjHighlight && step.adjHighlight.src === srcKey ? step.adjHighlight : null;
+
+        const itemsMarkup = list.length === 0
+          ? '<span class="text-zinc-600 italic">empty</span>'
+          : list.map((dst, idx) => {
+              const isTopOfStack = idx === list.length - 1;
+              return `
+                <span class="px-1.5 py-0.5 rounded ${
+                  isTopOfStack
+                    ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold'
+                    : 'bg-zinc-900 text-zinc-400 border border-zinc-800'
+                }" title="${isTopOfStack ? 'Next to pop() in O(1)' : ''}">"${dst}"</span>
+              `;
+            }).join('');
+
+        return `
+          <div class="px-2.5 py-1.5 rounded-lg border ${
+            isCurrentSrc ? 'bg-amber-500/10 border-amber-500/40' : 'border-transparent'
+          } flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-bold text-amber-400 shrink-0">"${srcKey}":</span>
+              <div class="flex items-center gap-1 flex-wrap">[${itemsMarkup}]</div>
+            </div>
+            ${hl ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 shrink-0">pop() → "${hl.popped}"</span>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      // 7. DFS Call Stack
+      const stackContainer = document.getElementById('callstack-container');
+      document.getElementById('stack-depth-badge').textContent = `depth = ${step.callStack.length}`;
+      if (step.callStack.length === 0) {
+        stackContainer.innerHTML = '<span class="text-zinc-600 italic">Call stack empty</span>';
+      } else {
+        const reversed = [...step.callStack].reverse();
+        stackContainer.innerHTML = reversed.map((airport, idx) => {
+          const isTop = idx === 0;
+          const remCount = (step.adj[airport] || []).length;
+          return `
+            <div class="px-2.5 py-1.5 rounded-lg border flex items-center justify-between gap-2 ${
+              isTop
+                ? 'bg-amber-500/15 border-amber-400/60 text-amber-100'
+                : 'bg-zinc-900/90 border-zinc-800 text-zinc-400'
+            }">
+              <span class="font-semibold">${isTop ? '▶ ' : ''}dfs("${airport}")</span>
+              <span class="text-[11px] text-zinc-400">
+                adj["${airport}"] len = ${remCount}
+              </span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 8. Render SVG Graph
+      renderGraphSVG(step);
+    }
+
+    // =========================================================================
+    // 6. DRAGGABLE AIRPORT NODES
+    // =========================================================================
+    const svgEl = document.getElementById('graph-svg');
+
+    function getSVGPoint(clientX, clientY) {
+      const rect = svgEl.getBoundingClientRect();
+      return {
+        x: ((clientX - rect.left) / rect.width) * 680,
+        y: ((clientY - rect.top) / rect.height) * 315
+      };
+    }
+
+    svgEl.addEventListener('pointerdown', (e) => {
+      const group = e.target.closest('.graph-node');
+      if (!group) return;
+      draggingAirport = group.getAttribute('data-airport');
+      svgEl.setPointerCapture(e.pointerId);
+    });
+
+    svgEl.addEventListener('pointermove', (e) => {
+      if (!draggingAirport) return;
+      const pt = getSVGPoint(e.clientX, e.clientY);
+      airportPositions[draggingAirport] = {
+        x: Math.max(45, Math.min(635, pt.x)),
+        y: Math.max(50, Math.min(275, pt.y))
+      };
+      renderGraphSVG(steps[currentStepIdx]);
+    });
+
+    svgEl.addEventListener('pointerup', (e) => {
+      if (draggingAirport) {
+        draggingAirport = null;
+        svgEl.releasePointerCapture(e.pointerId);
+      }
+    });
+
+    // =========================================================================
+    // 7. PLAYBACK, PRESETS & CUSTOM MODAL CONTROLS
+    // =========================================================================
+    function updatePresetButtons() {
+      [0, 1, 2].forEach(idx => {
+        const btn = document.getElementById(`preset-${idx}`);
+        if (idx === activePresetIndex) {
+          btn.className = 'preset-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg border bg-amber-500/15 border-amber-500/50 text-amber-300 transition cursor-pointer';
+        } else {
+          btn.className = 'preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition cursor-pointer';
+        }
+      });
+    }
+
+    function initializeTickets(tickets, presetIdx = -1, customPositions = null) {
+      stopPlay();
+      currentTickets = tickets;
+      activePresetIndex = presetIdx;
+      updatePresetButtons();
+
+      airportPositions = customPositions
+        ? JSON.parse(JSON.stringify(customPositions))
+        : computeAirportPositions(tickets);
+
+      document.getElementById('custom-tickets-input').value = JSON.stringify(tickets);
+      steps = generateTrace(tickets);
+      currentStepIdx = 0;
+      updateUI();
+    }
+
+    function loadPreset(idx) {
+      const p = PRESETS[idx];
+      initializeTickets(p.tickets, idx, p.positions);
+    }
+
+    function toggleCustomModal() {
+      const modal = document.getElementById('custom-modal');
+      document.getElementById('custom-tickets-error').classList.add('hidden');
+      modal.classList.toggle('hidden');
+    }
+
+    function applyCustomTickets() {
+      const errEl = document.getElementById('custom-tickets-error');
+      try {
+        const parsed = JSON.parse(document.getElementById('custom-tickets-input').value.trim());
+        if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 12) {
+          throw new Error('Please provide between 1 and 12 flight tickets as a 2D array.');
+        }
+        let hasJFKStart = false;
+        for (const pair of parsed) {
+          if (!Array.isArray(pair) || pair.length !== 2 || typeof pair[0] !== 'string' || typeof pair[1] !== 'string') {
+            throw new Error('Each ticket must be a ["SRC", "DST"] string pair.');
+          }
+          if (!pair[0].trim() || !pair[1].trim() || pair[0] === pair[1]) {
+            throw new Error('SRC and DST must be distinct non-empty airport codes.');
+          }
+          if (pair[0].trim().toUpperCase() === 'JFK') hasJFKStart = true;
+        }
+        if (!hasJFKStart) {
+          throw new Error('At least one ticket must depart from "JFK".');
+        }
+
+        const normalized = parsed.map(([u, v]) => [u.trim().toUpperCase(), v.trim().toUpperCase()]);
+        toggleCustomModal();
+        initializeTickets(normalized, -1, null);
+      } catch (e) {
+        errEl.textContent = e.message || 'Invalid JSON format.';
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    function stepForward() {
+      if (currentStepIdx < steps.length - 1) {
+        currentStepIdx++;
+        updateUI();
+      } else {
+        stopPlay();
+      }
+    }
+
+    function stepBackward() {
+      stopPlay();
+      if (currentStepIdx > 0) {
+        currentStepIdx--;
+        updateUI();
+      }
+    }
+
+    function resetVisualizer() {
+      stopPlay();
+      currentStepIdx = 0;
+      updateUI();
+    }
+
+    function startPlay() {
+      if (currentStepIdx >= steps.length - 1) {
+        currentStepIdx = 0;
+        updateUI();
+      }
+      isPlaying = true;
+      document.getElementById('icon-play').classList.add('hidden');
+      document.getElementById('icon-pause').classList.remove('hidden');
+      document.getElementById('play-label').textContent = 'Pause';
+
+      const sliderVal = document.getElementById('speed-slider').value;
+      const delay = SPEED_MAP[sliderVal].ms;
+
+      playTimer = setInterval(() => {
+        if (currentStepIdx < steps.length - 1) {
+          currentStepIdx++;
+          updateUI();
+        } else {
+          stopPlay();
+        }
+      }, delay);
+    }
+
+    function stopPlay() {
+      isPlaying = false;
+      if (playTimer) {
+        clearInterval(playTimer);
+        playTimer = null;
+      }
+      document.getElementById('icon-play').classList.remove('hidden');
+      document.getElementById('icon-pause').classList.add('hidden');
+      document.getElementById('play-label').textContent = 'Play';
+    }
+
+    function togglePlay() {
+      if (isPlaying) stopPlay();
+      else startPlay();
+    }
+
+    document.getElementById('speed-slider').addEventListener('input', (e) => {
+      const val = e.target.value;
+      document.getElementById('speed-label').textContent = SPEED_MAP[val].label;
+      if (isPlaying) {
+        stopPlay();
+        startPlay();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        stopPlay();
+        stepForward();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        stepBackward();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key.toLowerCase() === 'r') {
+        resetVisualizer();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderCodePanel();
+      loadPreset(0); // Start on Ex 1 (Dead-end trap) to showcase post-order unwind
+    });
+  </script>
+</body>
+</html>
