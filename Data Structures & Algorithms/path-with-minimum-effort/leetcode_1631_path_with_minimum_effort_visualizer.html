@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeetCode 1631: Path with Minimum Effort — Algorithm Visualizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            vscode: {
+              bg: '#18181b',
+              panel: '#1e1e22',
+              header: '#25252b',
+              border: '#32323a',
+              activeLine: 'rgba(234, 179, 8, 0.16)',
+              activeBorder: '#eab308',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #121215;
+      color: #e4e4e7;
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom scrollbar for code and heap panels */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #18181b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #3f3f46;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #52525b;
+    }
+    .code-line {
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .cell-card {
+      transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.45); }
+      50% { box-shadow: 0 0 18px 2px rgba(250, 204, 21, 0.25); }
+    }
+    .active-pop-glow {
+      animation: pulseGlow 1.8s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- Top Navigation & Preset Bar -->
+  <header class="bg-[#18181c] border-b border-[#2b2b33] px-4 py-3 sticky top-0 z-30">
+    <div class="max-w-[1600px] mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <!-- Title & Badge -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center font-mono font-bold text-zinc-950 shadow-md shrink-0">
+          1631
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-base sm:text-lg font-bold text-zinc-100 tracking-tight">
+              Path with Minimum Effort
+            </h1>
+            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              Medium • Dijkstra's Algorithm
+            </span>
+          </div>
+          <p class="text-xs text-zinc-400">
+            Minimize the maximum absolute height difference along a path from <code class="text-zinc-300">(0, 0)</code> to <code class="text-zinc-300">(ROWS-1, COLS-1)</code>
+          </p>
+        </div>
+      </div>
+
+      <!-- Preset Selector & Custom Grid Input -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-medium text-zinc-400 mr-1">Presets:</span>
+        <button onclick="loadPreset(0)" id="preset-0" class="preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border transition cursor-pointer">
+          Ex 1 (3×3 → 2)
+        </button>
+        <button onclick="loadPreset(1)" id="preset-1" class="preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border transition cursor-pointer">
+          Ex 2 (3×3 → 1)
+        </button>
+        <button onclick="loadPreset(2)" id="preset-2" class="preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border transition cursor-pointer">
+          Ex 3 (5×5 → 0)
+        </button>
+        <button onclick="toggleCustomModal()" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition cursor-pointer flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+          </svg>
+          Custom Grid
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Custom Grid Input Drawer (Hidden by default) -->
+  <div id="custom-grid-bar" class="hidden bg-[#1e1e24] border-b border-[#32323a] px-4 py-3">
+    <div class="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <label for="custom-grid-input" class="text-xs font-semibold text-zinc-300 whitespace-nowrap">
+        Heights 2D JSON:
+      </label>
+      <input
+        id="custom-grid-input"
+        type="text"
+        value="[[1,2,2],[3,8,2],[5,3,5]]"
+        placeholder="e.g. [[1,2,2],[3,8,2],[5,3,5]]"
+        class="flex-1 bg-zinc-950 border border-zinc-700 focus:border-amber-500 rounded-lg px-3 py-1.5 text-xs font-mono text-zinc-100 outline-none"
+      />
+      <div class="flex items-center gap-2">
+        <button onclick="applyCustomGrid()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 transition cursor-pointer">
+          Apply Grid
+        </button>
+        <button onclick="toggleCustomModal()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition cursor-pointer">
+          Close
+        </button>
+      </div>
+    </div>
+    <p id="custom-grid-error" class="max-w-[1600px] mx-auto text-xs text-rose-400 mt-1.5 hidden"></p>
+  </div>
+
+  <!-- Playback Controls & Step Explanation Banner -->
+  <section class="bg-[#16161a] border-b border-[#2b2b33] px-4 py-3">
+    <div class="max-w-[1600px] mx-auto flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+      <!-- Playback Buttons -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="resetVisualizer()" title="Reset (R)" class="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition cursor-pointer" aria-label="Reset">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+
+        <button onclick="stepBackward()" id="btn-prev" title="Step Backward (Left Arrow)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:pointer-events-none text-zinc-200 border border-zinc-700 text-xs font-medium flex items-center gap-1 transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Prev
+        </button>
+
+        <button onclick="togglePlay()" id="btn-play" title="Play / Pause (Space)" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer min-w-[92px] justify-center">
+          <svg id="icon-play" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path>
+          </svg>
+          <svg id="icon-pause" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M5.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75A.75.75 0 007.25 3h-1.5zM12.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75a.75.75 0 00-.75-.75h-1.5z"></path>
+          </svg>
+          <span id="play-label">Play</span>
+        </button>
+
+        <button onclick="stepForward()" id="btn-next" title="Step Forward (Right Arrow)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:pointer-events-none text-zinc-200 border border-zinc-700 text-xs font-medium flex items-center gap-1 transition cursor-pointer">
+          Next
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+
+        <!-- Step Counter -->
+        <div class="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300">
+          Step <span id="step-current" class="text-amber-400 font-bold">0</span> / <span id="step-total">0</span>
+        </div>
+
+        <!-- Speed Slider -->
+        <div class="flex items-center gap-2 ml-1 bg-zinc-900/90 border border-zinc-800 rounded-lg px-3 py-1">
+          <span class="text-[11px] text-zinc-400">Speed</span>
+          <input id="speed-slider" type="range" min="1" max="5" value="3" class="w-20 accent-amber-500 cursor-pointer" />
+          <span id="speed-label" class="text-[11px] font-mono text-zinc-300 w-7">1.0x</span>
+        </div>
+      </div>
+
+      <!-- Live Explanation Banner -->
+      <div id="explanation-banner" class="flex-1 bg-[#1e1e26] border border-[#32323e] rounded-xl px-3.5 py-2 flex items-center gap-3 min-h-[44px]">
+        <span id="step-badge" class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold uppercase tracking-wider bg-sky-500/15 text-sky-400 border border-sky-500/30 shrink-0">
+          INIT
+        </span>
+        <p id="explanation-text" class="text-xs sm:text-sm text-zinc-200 leading-snug">
+          Initialize minHeap with <code class="font-mono text-amber-300">[0, 0, 0]</code> and empty <code class="font-mono text-emerald-300">visit</code> set.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Workspace: Left Grid & Edge Inspector | Right Code & Heap/Variables -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+    <!-- LEFT COLUMN: 2D Grid Visualization & Legend (7 cols on lg) -->
+    <div class="lg:col-span-7 flex flex-col gap-4">
+
+      <!-- Grid Card -->
+      <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 sm:p-5 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-semibold text-zinc-100">2D Elevation Grid <span class="font-mono text-xs text-zinc-400">(heights[r][c])</span></h2>
+            <span id="grid-dims-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+              3 × 3
+            </span>
+          </div>
+
+          <!-- Compact Legend -->
+          <div class="flex flex-wrap items-center gap-2.5 text-[11px] text-zinc-400">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-zinc-800 border border-zinc-600 inline-block"></span> Unvisited</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-sky-500/25 border border-sky-400 inline-block"></span> In minHeap</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-amber-500/30 border border-amber-400 inline-block"></span> Current (r, c)</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-purple-500/30 border border-purple-400 inline-block"></span> Neighbor</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500/25 border border-emerald-400 inline-block"></span> Visited</span>
+          </div>
+        </div>
+
+        <!-- Relative Container for SVG Overlay + Grid Cells -->
+        <div class="relative flex justify-center items-center py-3 overflow-x-auto">
+          <div id="grid-wrapper" class="relative inline-block">
+            <!-- SVG Layer for Directional Arrow & Optimal Path -->
+            <svg id="grid-svg-overlay" class="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible"></svg>
+            <!-- Grid Cells Container -->
+            <div id="grid-container" class="grid gap-3 sm:gap-4 relative z-10"></div>
+          </div>
+        </div>
+
+        <!-- Edge Calculation / Transition Inspector Bar -->
+        <div id="edge-inspector" class="mt-4 bg-[#121216] border border-[#2a2a32] rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-2 text-zinc-400">
+            <span class="font-semibold text-zinc-300">Edge Transition Formula:</span>
+            <code class="font-mono text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+              newDiff = max(diff, abs(heights[r][c] - heights[newR][newC]))
+            </code>
+          </div>
+          <div id="edge-calc-live" class="font-mono text-xs text-zinc-400">
+            Waiting for neighbor evaluation...
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Structures Inspector: minHeap & visit set -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Priority Queue (minHeap) -->
+        <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 shadow-lg flex flex-col">
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 font-mono">minHeap (Sorted by diff)</h3>
+            </div>
+            <span id="heap-count" class="text-[11px] font-mono text-zinc-400">len = 1</span>
+          </div>
+          <p class="text-[11px] text-zinc-500 mb-2.5">Tuple format: <code class="text-zinc-300">[diff, r, c]</code> — smallest <code class="text-sky-300">diff</code> pops first</p>
+          <div id="heap-container" class="flex flex-wrap gap-2 min-h-[56px] max-h-[160px] overflow-y-auto items-start content-start p-2 rounded-xl bg-[#121216] border border-[#26262e]">
+            <!-- Heap items rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Visited Set -->
+        <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 shadow-lg flex flex-col">
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 font-mono">visit = set()</h3>
+            </div>
+            <span id="visit-count" class="text-[11px] font-mono text-zinc-400">len = 0</span>
+          </div>
+          <p class="text-[11px] text-zinc-500 mb-2.5">Finalized coordinates <code class="text-zinc-300">(r, c)</code> whose minimum effort is locked in</p>
+          <div id="visit-container" class="flex flex-wrap gap-1.5 min-h-[56px] max-h-[160px] overflow-y-auto items-start content-start p-2 rounded-xl bg-[#121216] border border-[#26262e]">
+            <!-- Visited tuples rendered dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Synchronized Python Code & Live Variable State (5 cols on lg) -->
+    <div class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- Live Variables Card -->
+      <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300">Local Variables</h3>
+          <span class="text-[11px] font-mono text-zinc-500">Python 3 Frame</span>
+        </div>
+        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 font-mono text-center">
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">diff</div>
+            <div id="var-diff" class="text-sm font-bold text-amber-400 mt-0.5">—</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">r</div>
+            <div id="var-r" class="text-sm font-bold text-zinc-100 mt-0.5">—</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">c</div>
+            <div id="var-c" class="text-sm font-bold text-zinc-100 mt-0.5">—</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">newR</div>
+            <div id="var-newR" class="text-sm font-bold text-purple-400 mt-0.5">—</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">newC</div>
+            <div id="var-newC" class="text-sm font-bold text-purple-400 mt-0.5">—</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">newDiff</div>
+            <div id="var-newDiff" class="text-sm font-bold text-sky-400 mt-0.5">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Python Code Panel (Exact 25 lines from screenshot) -->
+      <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl overflow-hidden shadow-xl">
+        <div class="bg-[#202026] border-b border-[#2e2e36] px-4 py-2.5 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+            </div>
+            <span class="text-xs font-mono text-zinc-300 ml-2">solution.py</span>
+          </div>
+          <span class="text-[11px] font-mono text-zinc-500">O(E log V) Time • O(V) Space</span>
+        </div>
+
+        <div id="code-container" class="py-2 font-mono text-[12px] sm:text-[13px] leading-[1.65] overflow-x-auto select-text">
+          <!-- 25 lines rendered via JS -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // =========================================================================
+    // 1. EXACT PYTHON SOURCE CODE (Lines 1 to 25 matching screenshot)
+    // =========================================================================
+    const PYTHON_LINES = [
+      { num: 1,  html: '<span class="text-sky-400">class</span> <span class="text-emerald-300">Solution</span>:' },
+      { num: 2,  html: '    <span class="text-sky-400">def</span> <span class="text-amber-200">minimumEffortPath</span>(<span class="text-orange-300">self</span>, heights: List[List[<span class="text-emerald-300">int</span>]]) -&gt; <span class="text-emerald-300">int</span>:' },
+      { num: 3,  html: '        ROWS, COLS = <span class="text-amber-200">len</span>(heights), <span class="text-amber-200">len</span>(heights[<span class="text-purple-300">0</span>])' },
+      { num: 4,  html: '' },
+      { num: 5,  html: '        minHeap = [[<span class="text-purple-300">0</span>, <span class="text-purple-300">0</span>, <span class="text-purple-300">0</span>]] <span class="text-zinc-500"># [diff, r, c]</span>' },
+      { num: 6,  html: '        visit = <span class="text-amber-200">set</span>()' },
+      { num: 7,  html: '        directions = [[<span class="text-purple-300">0</span>, <span class="text-purple-300">1</span>], [<span class="text-purple-300">0</span>, -<span class="text-purple-300">1</span>], [<span class="text-purple-300">1</span>, <span class="text-purple-300">0</span>], [-<span class="text-purple-300">1</span>, <span class="text-purple-300">0</span>]]' },
+      { num: 8,  html: '' },
+      { num: 9,  html: '        <span class="text-purple-400">while</span> minHeap:' },
+      { num: 10, html: '            diff, r, c = heapq.heappop(minHeap)' },
+      { num: 11, html: '' },
+      { num: 12, html: '            <span class="text-purple-400">if</span> (r, c) <span class="text-purple-400">in</span> visit:' },
+      { num: 13, html: '                <span class="text-purple-400">continue</span>' },
+      { num: 14, html: '            visit.add((r, c))' },
+      { num: 15, html: '            <span class="text-purple-400">if</span> (r, c) == (ROWS - <span class="text-purple-300">1</span>, COLS - <span class="text-purple-300">1</span>):' },
+      { num: 16, html: '                <span class="text-purple-400">return</span> diff' },
+      { num: 17, html: '' },
+      { num: 18, html: '            <span class="text-purple-400">for</span> dr, dc <span class="text-purple-400">in</span> directions:' },
+      { num: 19, html: '                newR, newC = r + dr, c + dc' },
+      { num: 20, html: '                <span class="text-purple-400">if</span> (newR &lt; <span class="text-purple-300">0</span> <span class="text-purple-400">or</span> newC &lt; <span class="text-purple-300">0</span> <span class="text-purple-400">or</span>' },
+      { num: 21, html: '                    newR == ROWS <span class="text-purple-400">or</span> newC == COLS <span class="text-purple-400">or</span>' },
+      { num: 22, html: '                    (newR, newC) <span class="text-purple-400">in</span> visit):' },
+      { num: 23, html: '                    <span class="text-purple-400">continue</span>' },
+      { num: 24, html: '                newDiff = <span class="text-amber-200">max</span>(diff, <span class="text-amber-200">abs</span>(heights[r][c] - heights[newR][newC]))' },
+      { num: 25, html: '                heapq.heappush(minHeap, [newDiff, newR, newC])' }
+    ];
+
+    // =========================================================================
+    // 2. PRESET GRIDS & GLOBAL STATE
+    // =========================================================================
+    const PRESETS = [
+      {
+        name: 'Example 1',
+        grid: [
+          [1, 2, 2],
+          [3, 8, 2],
+          [5, 3, 5]
+        ]
+      },
+      {
+        name: 'Example 2',
+        grid: [
+          [1, 2, 3],
+          [3, 8, 4],
+          [5, 3, 5]
+        ]
+      },
+      {
+        name: 'Example 3',
+        grid: [
+          [1, 2, 1, 1, 1],
+          [1, 2, 1, 2, 1],
+          [1, 2, 1, 2, 1],
+          [1, 2, 1, 2, 1],
+          [1, 1, 1, 2, 1]
+        ]
+      }
+    ];
+
+    let currentGrid = PRESETS[0].grid;
+    let activePresetIndex = 0;
+    let steps = [];
+    let currentStepIdx = 0;
+    let isPlaying = false;
+    let playTimer = null;
+    let speedMultiplier = 1.0;
+
+    const SPEED_MAP = {
+      1: { label: '0.5x', ms: 1500 },
+      2: { label: '0.75x', ms: 1050 },
+      3: { label: '1.0x', ms: 700 },
+      4: { label: '1.5x', ms: 420 },
+      5: { label: '2.5x', ms: 220 }
+    };
+
+    // =========================================================================
+    // 3. TRACE GENERATOR (Executes exact Dijkstra algorithm & records snapshots)
+    // =========================================================================
+    function generateTrace(heights) {
+      const ROWS = heights.length;
+      const COLS = heights[0].length;
+      const recordedSteps = [];
+
+      // Min-heap helper matching Python heapq behavior
+      let minHeap = [[0, 0, 0]]; // [diff, r, c]
+      const visit = new Set();
+      const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+      const dirNames = ['Right (0, 1)', 'Left (0, -1)', 'Down (1, 0)', 'Up (-1, 0)'];
+
+      // Track best known diff per cell for display & parent pointers to reconstruct optimal path
+      const bestDiff = Array.from({ length: ROWS }, () => Array(COLS).fill(Infinity));
+      const parent = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+      bestDiff[0][0] = 0;
+
+      const cloneHeap = () =>
+        [...minHeap]
+          .sort((a, b) => (a[0] !== b[0] ? a[0] - b[0] : a[1] !== b[1] ? a[1] - b[1] : a[2] - b[2]))
+          .map(item => [...item]);
+
+      const cloneBestDiff = () => bestDiff.map(row => [...row]);
+
+      function pushStep({
+        lines,
+        badge,
+        badgeColor,
+        explanation,
+        vars = {},
+        currentCell = null,
+        neighborCell = null,
+        edgeInfo = null,
+        optimalPath = null
+      }) {
+        recordedSteps.push({
+          lines,
+          badge,
+          badgeColor,
+          explanation,
+          vars: {
+            diff: vars.diff !== undefined ? vars.diff : '—',
+            r: vars.r !== undefined ? vars.r : '—',
+            c: vars.c !== undefined ? vars.c : '—',
+            newR: vars.newR !== undefined ? vars.newR : '—',
+            newC: vars.newC !== undefined ? vars.newC : '—',
+            newDiff: vars.newDiff !== undefined ? vars.newDiff : '—'
+          },
+          heap: cloneHeap(),
+          visit: Array.from(visit),
+          bestDiff: cloneBestDiff(),
+          currentCell,
+          neighborCell,
+          edgeInfo,
+          optimalPath
+        });
+      }
+
+      // Step 0: Initialization (Lines 3-7)
+      pushStep({
+        lines: [3, 5, 6, 7],
+        badge: 'INIT',
+        badgeColor: 'sky',
+        explanation: `Grid size is ${ROWS}×${COLS}. Initialize minHeap = [[0, 0, 0]] starting at (0, 0) with effort 0, and an empty visit set.`,
+        vars: {}
+      });
+
+      while (minHeap.length > 0) {
+        // Sort to emulate heapq.heappop
+        minHeap.sort((a, b) => (a[0] !== b[0] ? a[0] - b[0] : a[1] !== b[1] ? a[1] - b[1] : a[2] - b[2]));
+        const [diff, r, c] = minHeap.shift();
+
+        // Pop step (Line 10)
+        pushStep({
+          lines: [9, 10],
+          badge: 'HEAPPOP',
+          badgeColor: 'amber',
+          explanation: `Pop minimum effort entry [${diff}, ${r}, ${c}] from minHeap → diff = ${diff}, r = ${r}, c = ${c}.`,
+          vars: { diff, r, c },
+          currentCell: [r, c]
+        });
+
+        // Check if already visited (Lines 12-13)
+        const key = `${r},${c}`;
+        if (visit.has(key)) {
+          pushStep({
+            lines: [12, 13],
+            badge: 'SKIP STALE',
+            badgeColor: 'zinc',
+            explanation: `(${r}, ${c}) is already in visit set with a smaller or equal effort (${bestDiff[r][c]}). Continue to next heap item.`,
+            vars: { diff, r, c },
+            currentCell: [r, c]
+          });
+          continue;
+        }
+
+        // Add to visit (Line 14)
+        visit.add(key);
+        bestDiff[r][c] = diff;
+        pushStep({
+          lines: [14],
+          badge: 'VISIT ADD',
+          badgeColor: 'emerald',
+          explanation: `Mark (${r}, ${c}) as visited. Its minimum path effort is finalized at diff = ${diff}.`,
+          vars: { diff, r, c },
+          currentCell: [r, c]
+        });
+
+        // Check destination (Lines 15-16)
+        if (r === ROWS - 1 && c === COLS - 1) {
+          // Reconstruct optimal path via parent pointers
+          const path = [];
+          let curr = [r, c];
+          while (curr) {
+            path.unshift(curr);
+            curr = parent[curr[0]][curr[1]];
+          }
+
+          pushStep({
+            lines: [15, 16],
+            badge: 'RETURN',
+            badgeColor: 'emerald',
+            explanation: `Reached bottom-right destination (${ROWS - 1}, ${COLS - 1})! Return minimum effort diff = ${diff}.`,
+            vars: { diff, r, c },
+            currentCell: [r, c],
+            optimalPath: path
+          });
+          break;
+        }
+
+        // Explore 4 neighbors (Lines 18-25)
+        for (let d = 0; d < directions.length; d++) {
+          const [dr, dc] = directions[d];
+          const newR = r + dr;
+          const newC = c + dc;
+          const nKey = `${newR},${newC}`;
+
+          const outOfBounds = newR < 0 || newC < 0 || newR === ROWS || newC === COLS;
+          const alreadyVisited = !outOfBounds && visit.has(nKey);
+
+          if (outOfBounds || alreadyVisited) {
+            const reason = outOfBounds
+              ? `(${newR}, ${newC}) is out of bounds`
+              : `(${newR}, ${newC}) is already in visit`;
+            pushStep({
+              lines: [18, 19, 20, 21, 22, 23],
+              badge: 'IGNORE',
+              badgeColor: 'zinc',
+              explanation: `Check ${dirNames[d]} → ${reason}. Skip via continue.`,
+              vars: { diff, r, c, newR, newC },
+              currentCell: [r, c],
+              neighborCell: outOfBounds ? null : [newR, newC],
+              edgeInfo: {
+                from: [r, c],
+                to: outOfBounds ? null : [newR, newC],
+                status: 'skipped',
+                text: reason
+              }
+            });
+            continue;
+          }
+
+          const edgeAbs = Math.abs(heights[r][c] - heights[newR][newC]);
+          const newDiff = Math.max(diff, edgeAbs);
+
+          if (newDiff < bestDiff[newR][newC]) {
+            bestDiff[newR][newC] = newDiff;
+            parent[newR][newC] = [r, c];
+          }
+
+          minHeap.push([newDiff, newR, newC]);
+
+          pushStep({
+            lines: [18, 19, 24, 25],
+            badge: 'HEAPPUSH',
+            badgeColor: 'purple',
+            explanation: `Neighbor (${newR}, ${newC}) has height ${heights[newR][newC]}. Edge diff = |${heights[r][c]} - ${heights[newR][newC]}| = ${edgeAbs}. Push [${newDiff}, ${newR}, ${newC}] to minHeap.`,
+            vars: { diff, r, c, newR, newC, newDiff },
+            currentCell: [r, c],
+            neighborCell: [newR, newC],
+            edgeInfo: {
+              from: [r, c],
+              to: [newR, newC],
+              status: 'pushed',
+              hFrom: heights[r][c],
+              hTo: heights[newR][newC],
+              edgeAbs,
+              diff,
+              newDiff
+            }
+          });
+        }
+      }
+
+      return recordedSteps;
+    }
+
+    // =========================================================================
+    // 4. DOM RENDERING FUNCTIONS
+    // =========================================================================
+    function renderCodePanel() {
+      const container = document.getElementById('code-container');
+      container.innerHTML = PYTHON_LINES.map(line => `
+        <div id="code-line-${line.num}" class="code-line flex items-start px-3 py-0.5 border-l-2 border-transparent">
+          <span class="w-7 text-right pr-3 text-zinc-600 select-none shrink-0 text-xs leading-[1.65]">${line.num}</span>
+          <pre class="whitespace-pre text-zinc-200">${line.html || ' '}</pre>
+        </div>
+      `).join('');
+    }
+
+    function renderGridCells(heights) {
+      const ROWS = heights.length;
+      const COLS = heights[0].length;
+      const gridEl = document.getElementById('grid-container');
+      document.getElementById('grid-dims-badge').textContent = `${ROWS} × ${COLS}`;
+
+      // Responsive cell sizing depending on grid size
+      const cellSizeClass = ROWS >= 5 || COLS >= 5
+        ? 'w-16 h-16 sm:w-20 sm:h-20'
+        : 'w-20 h-20 sm:w-24 sm:h-24';
+
+      gridEl.style.gridTemplateColumns = `repeat(${COLS}, minmax(0, 1fr))`;
+      gridEl.innerHTML = '';
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const cell = document.createElement('div');
+          cell.id = `cell-${r}-${c}`;
+          cell.className = `cell-card ${cellSizeClass} rounded-xl border bg-zinc-900/90 border-zinc-700/80 flex flex-col justify-between p-2 relative select-none`;
+
+          const isStart = r === 0 && c === 0;
+          const isEnd = r === ROWS - 1 && c === COLS - 1;
+
+          cell.innerHTML = `
+            <div class="flex items-center justify-between text-[10px] font-mono">
+              <span class="text-zinc-400">(${r},${c})</span>
+              ${isStart ? '<span class="px-1 rounded bg-amber-500/20 text-amber-300 font-semibold">START</span>' : ''}
+              ${isEnd ? '<span class="px-1 rounded bg-emerald-500/20 text-emerald-300 font-semibold">END</span>' : ''}
+            </div>
+            <div class="text-center my-auto">
+              <div class="text-lg sm:text-xl font-bold font-mono text-zinc-100 leading-none">${heights[r][c]}</div>
+            </div>
+            <div class="flex items-center justify-between text-[10px] font-mono border-t border-zinc-800/90 pt-1">
+              <span class="text-zinc-500">effort</span>
+              <span id="cell-diff-${r}-${c}" class="font-semibold text-zinc-400">∞</span>
+            </div>
+          `;
+          gridEl.appendChild(cell);
+        }
+      }
+    }
+
+    function updateUI() {
+      const step = steps[currentStepIdx];
+      if (!step) return;
+
+      const ROWS = currentGrid.length;
+      const COLS = currentGrid[0].length;
+
+      // 1. Step Counter & Buttons
+      document.getElementById('step-current').textContent = currentStepIdx;
+      document.getElementById('step-total').textContent = steps.length - 1;
+      document.getElementById('btn-prev').disabled = currentStepIdx === 0;
+      document.getElementById('btn-next').disabled = currentStepIdx === steps.length - 1;
+
+      // 2. Explanation Banner
+      const badgeEl = document.getElementById('step-badge');
+      badgeEl.textContent = step.badge;
+      const badgeStyles = {
+        sky: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+        amber: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+        emerald: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+        purple: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+        zinc: 'bg-zinc-700/40 text-zinc-300 border-zinc-600/40'
+      };
+      badgeEl.className = `px-2 py-0.5 rounded text-[11px] font-mono font-semibold uppercase tracking-wider border shrink-0 ${badgeStyles[step.badgeColor] || badgeStyles.sky}`;
+      document.getElementById('explanation-text').innerHTML = step.explanation;
+
+      // 3. Code Line Highlighting
+      PYTHON_LINES.forEach(line => {
+        const el = document.getElementById(`code-line-${line.num}`);
+        if (!el) return;
+        if (step.lines.includes(line.num)) {
+          el.classList.add('bg-amber-500/15', 'border-amber-400');
+          el.classList.remove('border-transparent');
+        } else {
+          el.classList.remove('bg-amber-500/15', 'border-amber-400');
+          el.classList.add('border-transparent');
+        }
+      });
+
+      // 4. Local Variables
+      document.getElementById('var-diff').textContent = step.vars.diff;
+      document.getElementById('var-r').textContent = step.vars.r;
+      document.getElementById('var-c').textContent = step.vars.c;
+      document.getElementById('var-newR').textContent = step.vars.newR;
+      document.getElementById('var-newC').textContent = step.vars.newC;
+      document.getElementById('var-newDiff').textContent = step.vars.newDiff;
+
+      // 5. Grid Cell States
+      const visitSet = new Set(step.visit);
+      const heapCoords = new Set(step.heap.map(item => `${item[1]},${item[2]}`));
+      const optimalSet = new Set((step.optimalPath || []).map(([pr, pc]) => `${pr},${pc}`));
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const cellEl = document.getElementById(`cell-${r}-${c}`);
+          const diffEl = document.getElementById(`cell-diff-${r}-${c}`);
+          const key = `${r},${c}`;
+          const dVal = step.bestDiff[r][c];
+
+          diffEl.textContent = dVal === Infinity ? '∞' : dVal;
+
+          // Base reset
+          let classes = 'cell-card rounded-xl border flex flex-col justify-between p-2 relative select-none ';
+          classes += ROWS >= 5 || COLS >= 5 ? 'w-16 h-16 sm:w-20 sm:h-20 ' : 'w-20 h-20 sm:w-24 sm:h-24 ';
+
+          const isCurrent = step.currentCell && step.currentCell[0] === r && step.currentCell[1] === c;
+          const isNeighbor = step.neighborCell && step.neighborCell[0] === r && step.neighborCell[1] === c;
+          const isOptimal = optimalSet.has(key);
+          const isVisited = visitSet.has(key);
+          const isInHeap = heapCoords.has(key);
+
+          if (isOptimal) {
+            classes += 'bg-emerald-500/30 border-emerald-400 ring-2 ring-emerald-400/60 shadow-lg shadow-emerald-500/20';
+            diffEl.className = 'font-bold text-emerald-300';
+          } else if (isCurrent) {
+            classes += 'bg-amber-500/25 border-amber-400 ring-2 ring-amber-400/50 active-pop-glow';
+            diffEl.className = 'font-bold text-amber-300';
+          } else if (isNeighbor) {
+            classes += 'bg-purple-500/25 border-purple-400 ring-2 ring-purple-400/50';
+            diffEl.className = 'font-bold text-purple-300';
+          } else if (isVisited) {
+            classes += 'bg-emerald-950/50 border-emerald-500/50';
+            diffEl.className = 'font-semibold text-emerald-400';
+          } else if (isInHeap) {
+            classes += 'bg-sky-950/50 border-sky-400/60';
+            diffEl.className = 'font-semibold text-sky-300';
+          } else {
+            classes += 'bg-zinc-900/90 border-zinc-700/80';
+            diffEl.className = 'font-semibold text-zinc-500';
+          }
+
+          cellEl.className = classes;
+        }
+      }
+
+      // 6. Edge Calculation Inspector
+      const edgeCalcEl = document.getElementById('edge-calc-live');
+      if (step.edgeInfo && step.edgeInfo.status === 'pushed') {
+        const { hFrom, hTo, edgeAbs, diff, newDiff } = step.edgeInfo;
+        edgeCalcEl.innerHTML = `
+          <span class="text-purple-300">max(${diff}, |${hFrom} - ${hTo}|)</span> =
+          <span class="text-purple-300">max(${diff}, ${edgeAbs})</span> =
+          <span class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold">${newDiff}</span>
+        `;
+      } else if (step.edgeInfo && step.edgeInfo.status === 'skipped') {
+        edgeCalcEl.innerHTML = `<span class="text-zinc-400">Skipped: ${step.edgeInfo.text}</span>`;
+      } else if (step.optimalPath) {
+        edgeCalcEl.innerHTML = `<span class="text-emerald-400 font-semibold">Optimal Path Found! Minimum Effort = ${step.vars.diff}</span>`;
+      } else {
+        edgeCalcEl.innerHTML = `<span class="text-zinc-500">Waiting for neighbor evaluation...</span>`;
+      }
+
+      // 7. Render minHeap
+      const heapContainer = document.getElementById('heap-container');
+      document.getElementById('heap-count').textContent = `len = ${step.heap.length}`;
+      if (step.heap.length === 0) {
+        heapContainer.innerHTML = '<span class="text-xs font-mono text-zinc-600 italic">[] (empty)</span>';
+      } else {
+        heapContainer.innerHTML = step.heap.map((item, idx) => {
+          const isTop = idx === 0;
+          return `
+            <div class="px-2.5 py-1 rounded-lg font-mono text-xs border flex items-center gap-1.5 ${
+              isTop
+                ? 'bg-sky-500/20 border-sky-400 text-sky-200 font-semibold shadow-sm'
+                : 'bg-zinc-900 border-zinc-700 text-zinc-300'
+            }">
+              ${isTop ? '<span class="text-[10px] uppercase tracking-wider text-sky-400 font-bold">MIN</span>' : ''}
+              <span>[${item[0]}, (${item[1]},${item[2]})]</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 8. Render visit set
+      const visitContainer = document.getElementById('visit-container');
+      document.getElementById('visit-count').textContent = `len = ${step.visit.length}`;
+      if (step.visit.length === 0) {
+        visitContainer.innerHTML = '<span class="text-xs font-mono text-zinc-600 italic">set()</span>';
+      } else {
+        visitContainer.innerHTML = step.visit.map(coordStr => {
+          const [vr, vc] = coordStr.split(',');
+          return `
+            <span class="px-2 py-1 rounded-lg font-mono text-xs bg-emerald-500/15 border border-emerald-500/40 text-emerald-300">
+              (${vr}, ${vc})
+            </span>
+          `;
+        }).join('');
+      }
+
+      // 9. Draw SVG Arrows / Optimal Path Overlay
+      requestAnimationFrame(() => drawOverlaySVG(step));
+    }
+
+    function drawOverlaySVG(step) {
+      const svg = document.getElementById('grid-svg-overlay');
+      const wrapper = document.getElementById('grid-wrapper');
+      if (!svg || !wrapper) return;
+
+      svg.innerHTML = `
+        <defs>
+          <marker id="arrow-neighbor" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 z" fill="#c084fc" />
+          </marker>
+          <marker id="arrow-optimal" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 z" fill="#34d399" />
+          </marker>
+        </defs>
+      `;
+
+      const wrapRect = wrapper.getBoundingClientRect();
+
+      const getCenter = (r, c) => {
+        const el = document.getElementById(`cell-${r}-${c}`);
+        if (!el) return null;
+        const rect = el.getBoundingClientRect();
+        return {
+          x: rect.left - wrapRect.left + rect.width / 2,
+          y: rect.top - wrapRect.top + rect.height / 2
+        };
+      };
+
+      // Draw Optimal Path if completed
+      if (step.optimalPath && step.optimalPath.length > 1) {
+        for (let i = 0; i < step.optimalPath.length - 1; i++) {
+          const p1 = getCenter(step.optimalPath[i][0], step.optimalPath[i][1]);
+          const p2 = getCenter(step.optimalPath[i + 1][0], step.optimalPath[i + 1][1]);
+          if (!p1 || !p2) continue;
+
+          // Shorten line slightly so arrowhead sits cleanly
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const len = Math.hypot(dx, dy);
+          const pad = 18;
+          const x1 = p1.x + (dx / len) * pad;
+          const y1 = p1.y + (dy / len) * pad;
+          const x2 = p2.x - (dx / len) * pad;
+          const y2 = p2.y - (dy / len) * pad;
+
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', x1);
+          line.setAttribute('y1', y1);
+          line.setAttribute('x2', x2);
+          line.setAttribute('y2', y2);
+          line.setAttribute('stroke', '#34d399');
+          line.setAttribute('stroke-width', '3.5');
+          line.setAttribute('stroke-linecap', 'round');
+          line.setAttribute('marker-end', 'url(#arrow-optimal)');
+          svg.appendChild(line);
+        }
+        return;
+      }
+
+      // Draw Active Neighbor Evaluation Arrow
+      if (step.edgeInfo && step.edgeInfo.from && step.edgeInfo.to) {
+        const p1 = getCenter(step.edgeInfo.from[0], step.edgeInfo.from[1]);
+        const p2 = getCenter(step.edgeInfo.to[0], step.edgeInfo.to[1]);
+        if (p1 && p2) {
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const len = Math.hypot(dx, dy);
+          const pad = 20;
+          const x1 = p1.x + (dx / len) * pad;
+          const y1 = p1.y + (dy / len) * pad;
+          const x2 = p2.x - (dx / len) * pad;
+          const y2 = p2.y - (dy / len) * pad;
+
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', x1);
+          line.setAttribute('y1', y1);
+          line.setAttribute('x2', x2);
+          line.setAttribute('y2', y2);
+          line.setAttribute('stroke', step.edgeInfo.status === 'pushed' ? '#c084fc' : '#71717a');
+          line.setAttribute('stroke-width', '3');
+          if (step.edgeInfo.status !== 'pushed') {
+            line.setAttribute('stroke-dasharray', '4 4');
+          }
+          line.setAttribute('marker-end', 'url(#arrow-neighbor)');
+          svg.appendChild(line);
+
+          // Edge weight pill badge at midpoint
+          if (step.edgeInfo.status === 'pushed') {
+            const mx = (p1.x + p2.x) / 2;
+            const my = (p1.y + p2.y) / 2;
+
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', mx - 18);
+            rect.setAttribute('y', my - 11);
+            rect.setAttribute('width', '36');
+            rect.setAttribute('height', '22');
+            rect.setAttribute('rx', '6');
+            rect.setAttribute('fill', '#18181b');
+            rect.setAttribute('stroke', '#c084fc');
+            rect.setAttribute('stroke-width', '1.5');
+            svg.appendChild(rect);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', mx);
+            text.setAttribute('y', my + 4);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', '#e9d5ff');
+            text.setAttribute('font-size', '11');
+            text.setAttribute('font-family', 'JetBrains Mono, monospace');
+            text.setAttribute('font-weight', '700');
+            text.textContent = `Δ${step.edgeInfo.edgeAbs}`;
+            svg.appendChild(text);
+          }
+        }
+      }
+    }
+
+    // =========================================================================
+    // 5. PLAYBACK & INTERACTION CONTROLS
+    // =========================================================================
+    function updatePresetButtons() {
+      [0, 1, 2].forEach(idx => {
+        const btn = document.getElementById(`preset-${idx}`);
+        if (idx === activePresetIndex) {
+          btn.className = 'preset-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg border bg-amber-500/15 border-amber-500/50 text-amber-300 transition cursor-pointer';
+        } else {
+          btn.className = 'preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition cursor-pointer';
+        }
+      });
+    }
+
+    function initializeGrid(grid, presetIdx = -1) {
+      stopPlay();
+      currentGrid = grid;
+      activePresetIndex = presetIdx;
+      updatePresetButtons();
+      document.getElementById('custom-grid-input').value = JSON.stringify(grid);
+      steps = generateTrace(grid);
+      currentStepIdx = 0;
+      renderGridCells(grid);
+      updateUI();
+    }
+
+    function loadPreset(idx) {
+      document.getElementById('custom-grid-error').classList.add('hidden');
+      initializeGrid(PRESETS[idx].grid, idx);
+    }
+
+    function toggleCustomModal() {
+      const bar = document.getElementById('custom-grid-bar');
+      bar.classList.toggle('hidden');
+    }
+
+    function applyCustomGrid() {
+      const input = document.getElementById('custom-grid-input').value.trim();
+      const errEl = document.getElementById('custom-grid-error');
+      try {
+        const parsed = JSON.parse(input);
+        if (!Array.isArray(parsed) || parsed.length === 0 || !Array.isArray(parsed[0]) || parsed[0].length === 0) {
+          throw new Error('Grid must be a non-empty 2D array of integers.');
+        }
+        const cols = parsed[0].length;
+        if (parsed.length > 7 || cols > 7) {
+          throw new Error('Please keep grid dimensions ≤ 7×7 for optimal visualization.');
+        }
+        for (const row of parsed) {
+          if (!Array.isArray(row) || row.length !== cols || row.some(v => typeof v !== 'number' || !Number.isFinite(v) || v < 0)) {
+            throw new Error('All rows must have equal length and contain non-negative numbers.');
+          }
+        }
+        errEl.classList.add('hidden');
+        initializeGrid(parsed, -1);
+      } catch (e) {
+        errEl.textContent = e.message || 'Invalid JSON array format.';
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    function stepForward() {
+      if (currentStepIdx < steps.length - 1) {
+        currentStepIdx++;
+        updateUI();
+      } else {
+        stopPlay();
+      }
+    }
+
+    function stepBackward() {
+      stopPlay();
+      if (currentStepIdx > 0) {
+        currentStepIdx--;
+        updateUI();
+      }
+    }
+
+    function resetVisualizer() {
+      stopPlay();
+      currentStepIdx = 0;
+      updateUI();
+    }
+
+    function startPlay() {
+      if (currentStepIdx >= steps.length - 1) {
+        currentStepIdx = 0;
+        updateUI();
+      }
+      isPlaying = true;
+      document.getElementById('icon-play').classList.add('hidden');
+      document.getElementById('icon-pause').classList.remove('hidden');
+      document.getElementById('play-label').textContent = 'Pause';
+
+      const sliderVal = document.getElementById('speed-slider').value;
+      const delay = SPEED_MAP[sliderVal].ms;
+
+      playTimer = setInterval(() => {
+        if (currentStepIdx < steps.length - 1) {
+          currentStepIdx++;
+          updateUI();
+        } else {
+          stopPlay();
+        }
+      }, delay);
+    }
+
+    function stopPlay() {
+      isPlaying = false;
+      if (playTimer) {
+        clearInterval(playTimer);
+        playTimer = null;
+      }
+      document.getElementById('icon-play').classList.remove('hidden');
+      document.getElementById('icon-pause').classList.add('hidden');
+      document.getElementById('play-label').textContent = 'Play';
+    }
+
+    function togglePlay() {
+      if (isPlaying) stopPlay();
+      else startPlay();
+    }
+
+    // Speed Slider Listener
+    document.getElementById('speed-slider').addEventListener('input', (e) => {
+      const val = e.target.value;
+      document.getElementById('speed-label').textContent = SPEED_MAP[val].label;
+      if (isPlaying) {
+        stopPlay();
+        startPlay();
+      }
+    });
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (document.activeElement.tagName === 'INPUT') return;
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        stopPlay();
+        stepForward();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        stepBackward();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key.toLowerCase() === 'r') {
+        resetVisualizer();
+      }
+    });
+
+    // Redraw SVG arrows cleanly on window resize
+    window.addEventListener('resize', () => {
+      if (steps[currentStepIdx]) drawOverlaySVG(steps[currentStepIdx]);
+    });
+
+    // Boot Application
+    window.addEventListener('DOMContentLoaded', () => {
+      renderCodePanel();
+      loadPreset(0);
+    });
+  </script>
+</body>
+</html>
