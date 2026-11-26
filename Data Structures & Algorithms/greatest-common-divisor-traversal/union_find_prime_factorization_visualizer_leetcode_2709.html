@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Union-Find + Prime Factorization Debugger — LeetCode 2709</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.7);
+    }
+
+    @keyframes pulseRing {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.42); opacity: 0; }
+    }
+    .animate-pulse-ring {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: pulseRing 1.35s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.92); opacity: 0.4; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop {
+      animation: popIn 0.22s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Top Header -->
+  <header class="border-b border-slate-800/90 bg-slate-900/85 backdrop-blur-md sticky top-0 z-30">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 flex items-center justify-center text-white font-mono font-bold text-sm shadow-lg shadow-indigo-500/25 border border-indigo-400/30">
+          UF+P
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-50">
+              Union-Find &amp; Prime Factorization Debugger
+            </h1>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+              LC 2709
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              O(n √M)
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">
+            Step-by-step trace of prime factor hashing, union-by-size, path compression, and <code class="text-indigo-300">uf.n == 1</code> connectivity
+          </p>
+        </div>
+      </div>
+
+      <!-- Subtle Note Badge on uf.n and [1, ...] edge case -->
+      <div class="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/70 border border-slate-700/80 text-xs text-slate-300 max-w-md">
+        <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+        <span>
+          <strong class="text-slate-100 font-mono">uf.n</strong> starts at <code class="text-indigo-300">len(nums)</code> &amp; merges on <code class="text-emerald-300">union()</code>. If <code class="text-amber-300">1</code> appears with other numbers, <code class="text-slate-200">1</code> has no prime factors so <code class="text-rose-300">uf.n &gt; 1</code> → <code class="text-rose-300">False</code>.
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 flex flex-col gap-4">
+
+    <!-- Input & Presets Bar -->
+    <section class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-lg">
+      <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
+        <!-- Custom Input -->
+        <div class="flex-1">
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <label for="numsInput" class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Input Array <span class="font-mono lowercase text-indigo-400">nums</span> (1–10 positive integers)
+            </label>
+            <span class="text-[11px] font-mono text-slate-500">Press Enter to load</span>
+          </div>
+          <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
+            <div class="relative flex-1 min-w-[210px]">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-sm text-slate-500">[</span>
+              <input
+                id="numsInput"
+                type="text"
+                value="2, 3, 6"
+                placeholder="e.g. 2, 3, 6"
+                class="w-full pl-6 pr-6 py-2 rounded-xl font-mono text-sm bg-slate-950 text-slate-100 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+              />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-sm text-slate-500">]</span>
+            </div>
+            <button
+              id="loadBtn"
+              class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-semibold shadow-md shadow-indigo-600/25 transition-all cursor-pointer shrink-0"
+            >
+              Load &amp; Trace
+            </button>
+          </div>
+          <p id="inputError" class="text-xs text-rose-400 mt-1.5 hidden font-medium"></p>
+        </div>
+
+        <!-- Presets -->
+        <div class="flex flex-col">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            Test Case Presets
+          </span>
+          <div class="flex flex-wrap items-center gap-2">
+            <button data-preset="2, 3, 6" class="preset-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors cursor-pointer">
+              <span class="font-mono">[2, 3, 6]</span> <span class="opacity-75">True</span>
+            </button>
+            <button data-preset="4, 3, 12, 8" class="preset-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors cursor-pointer">
+              <span class="font-mono">[4, 3, 12, 8]</span> <span class="opacity-75">True</span>
+            </button>
+            <button data-preset="3, 9, 5" class="preset-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/20 transition-colors cursor-pointer">
+              <span class="font-mono">[3, 9, 5]</span> <span class="opacity-75">False</span>
+            </button>
+            <button data-preset="1, 2, 4" class="preset-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition-colors cursor-pointer">
+              <span class="font-mono">[1, 2, 4]</span> <span class="opacity-75">Edge (1)</span>
+            </button>
+            <button data-preset="99991, 99991, 99991, 99991" class="preset-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/20 transition-colors cursor-pointer">
+              <span class="font-mono">[99991×4]</span> <span class="opacity-75">Prime</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile/Tablet Edge Case Note -->
+      <div class="xl:hidden mt-3 pt-3 border-t border-slate-800/80 flex items-start gap-2 text-xs text-slate-400">
+        <span class="w-2 h-2 rounded-full bg-amber-400 mt-1 shrink-0"></span>
+        <span>
+          <strong class="text-slate-200 font-mono">uf.n</strong> starts at <code class="text-indigo-300">len(nums)</code> and decrements only when two distinct components merge. In <code class="text-amber-300">[1, 2, 4]</code>, <code class="text-slate-200">1</code> has no prime factors so <code class="text-rose-300">uf.n == 2</code> → <code class="text-rose-300">False</code>.
+        </span>
+      </div>
+    </section>
+
+    <!-- Playback Controls Bar -->
+    <section class="bg-slate-900/90 rounded-2xl border border-slate-800 px-4 py-3 shadow-lg flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <button id="resetBtn" title="Reset (Step 0)" class="p-2.5 rounded-xl border border-slate-700 bg-slate-800/70 hover:bg-slate-700 text-slate-200 transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+        </button>
+
+        <button id="prevBtn" title="Step Backward (ArrowLeft)" class="p-2.5 rounded-xl border border-slate-700 bg-slate-800/70 hover:bg-slate-700 text-slate-200 disabled:opacity-35 disabled:pointer-events-none transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <polygon points="19 20 9 12 19 4 19 20"></polygon>
+            <line x1="5" y1="19" x2="5" y2="5"></line>
+          </svg>
+        </button>
+
+        <button id="playPauseBtn" title="Play / Pause (Space)" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-semibold flex items-center gap-2 shadow-md shadow-indigo-600/25 transition-all cursor-pointer min-w-[112px] justify-center">
+          <svg id="playIcon" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <svg id="pauseIcon" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+          <span id="playPauseText">Play</span>
+        </button>
+
+        <button id="nextBtn" title="Step Forward (ArrowRight)" class="p-2.5 rounded-xl border border-slate-700 bg-slate-800/70 hover:bg-slate-700 text-slate-200 disabled:opacity-35 disabled:pointer-events-none transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <polygon points="5 4 15 12 5 20 5 4"></polygon>
+            <line x1="19" y1="5" x2="19" y2="19"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Timeline Scrubber -->
+      <div class="flex-1 min-w-[200px] max-w-xl flex items-center gap-3">
+        <span id="stepCounter" class="text-xs font-mono font-semibold text-slate-300 whitespace-nowrap">
+          Step 0 / 0
+        </span>
+        <input
+          id="stepSlider"
+          type="range"
+          min="0"
+          max="0"
+          value="0"
+          class="w-full accent-indigo-500 cursor-pointer h-1.5 bg-slate-700 rounded-lg"
+        />
+      </div>
+
+      <!-- Speed & Shortcut Hint -->
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2">
+          <label for="speedSelect" class="text-xs font-medium text-slate-400">Speed</label>
+          <select
+            id="speedSelect"
+            class="px-2.5 py-1.5 rounded-xl text-xs font-mono font-semibold bg-slate-800 text-indigo-300 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+          >
+            <option value="1300">0.5x</option>
+            <option value="750" selected>1.0x</option>
+            <option value="400">2.0x</option>
+            <option value="180">4.0x</option>
+          </select>
+        </div>
+        <span class="hidden md:inline-flex items-center gap-1 text-[11px] font-mono text-slate-500">
+          <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">Space</kbd>
+          <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">←</kbd>
+          <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">→</kbd>
+        </span>
+      </div>
+    </section>
+
+    <!-- Main 12-Column Debugger Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+      <!-- Left Column (7 cols): Union-Find Forest + Array Nodes + factor_index -->
+      <div class="lg:col-span-7 flex flex-col gap-4">
+
+        <!-- Union-Find Forest & Index Nodes Card -->
+        <div class="bg-slate-900/90 rounded-2xl border border-slate-800 shadow-lg overflow-hidden">
+          <!-- Card Header -->
+          <div class="px-4 py-3 border-b border-slate-800 bg-slate-900 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <span id="phaseBadge" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                Initialization
+              </span>
+              <span class="text-xs font-medium text-slate-400">Union-Find Forest &amp; Index Nodes</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs font-mono">
+              <span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300">
+                uf.n = <strong id="headerUfN" class="text-emerald-400">0</strong>
+              </span>
+              <span id="headerConnectedBadge" class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-400">
+                uf.n == 1: ?
+              </span>
+            </div>
+          </div>
+
+          <!-- Step Narrative Banner -->
+          <div class="px-4 py-2.5 bg-indigo-950/35 border-b border-slate-800/90 flex items-center gap-2.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-400 shrink-0"></span>
+            <p id="stepDescription" class="text-xs sm:text-sm font-medium text-slate-200">
+              Ready to trace Union-Find and prime factorization.
+            </p>
+          </div>
+
+          <!-- SVG Forest Canvas -->
+          <div class="relative w-full bg-slate-950/80 border-b border-slate-800/80">
+            <svg id="forestSvg" viewBox="0 0 680 310" class="w-full h-[260px] sm:h-[300px] select-none block">
+              <defs>
+                <marker id="arrowDefault" viewBox="0 0 10 10" refX="21" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b" />
+                </marker>
+                <marker id="arrowUnion" viewBox="0 0 10 10" refX="21" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#fbbf24" />
+                </marker>
+                <marker id="arrowCompress" viewBox="0 0 10 10" refX="21" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8" />
+                </marker>
+              </defs>
+              <g id="forestEdgesLayer"></g>
+              <g id="forestNodesLayer"></g>
+            </svg>
+
+            <!-- Legend overlay strip -->
+            <div class="px-4 py-2 bg-slate-900/75 border-t border-slate-800/70 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+              <div class="flex flex-wrap items-center gap-3">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Active <code class="text-slate-300">i</code> / Union
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Path Compression / <code class="text-slate-300">find()</code>
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Merged Component
+                </span>
+              </div>
+              <span class="font-mono text-[10px] text-slate-500">Arrows point child → Parent[node]</span>
+            </div>
+          </div>
+
+          <!-- Index Nodes Strip (0..len(nums)-1) -->
+          <div class="p-4">
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Index Nodes <code class="text-indigo-300">0 .. len(nums)-1</code>
+              </span>
+              <span class="text-[11px] font-mono text-slate-500">Shows nums[idx], Parent[idx], Size[idx]</span>
+            </div>
+            <div id="indexNodesGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Final Result Banner -->
+        <div id="resultBanner" class="hidden rounded-2xl p-4 border shadow-lg transition-all duration-300">
+          <div class="flex items-start gap-3">
+            <div id="resultIcon" class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold text-lg"></div>
+            <div>
+              <h3 id="resultTitle" class="text-sm sm:text-base font-bold"></h3>
+              <p id="resultMessage" class="text-xs sm:text-sm mt-0.5 opacity-90"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live factor_index Hash Map Card -->
+        <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-lg">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+            <div class="flex items-center gap-2">
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">
+                Live <code class="text-amber-300">factor_index</code> Hash Map
+              </h2>
+              <span id="factorCountBadge" class="px-2 py-0.5 rounded-full text-[11px] font-mono bg-slate-800 text-slate-400 border border-slate-700">
+                0 entries
+              </span>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400">prime_factor → first_index</span>
+          </div>
+
+          <div id="factorIndexContainer" class="flex flex-wrap gap-2 min-h-[44px] items-center">
+            <span class="text-xs font-mono text-slate-500 italic">factor_index = {} (empty)</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column (5 cols): Synchronized Code + Live Local/UF State -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
+
+        <!-- Synchronized Python Code Panel -->
+        <div class="bg-slate-900/90 rounded-2xl border border-slate-800 shadow-lg overflow-hidden">
+          <div class="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between bg-slate-900">
+            <div class="flex items-center gap-2">
+              <div class="flex gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+              </div>
+              <span class="text-xs font-mono font-semibold text-slate-300 ml-1">solution.py</span>
+            </div>
+            <span id="activeLineBadge" class="px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+              Line —
+            </span>
+          </div>
+
+          <div id="codeContainer" class="py-2 font-mono text-[11.5px] sm:text-xs leading-relaxed overflow-x-auto bg-slate-950 text-slate-200 max-h-[450px] overflow-y-auto">
+            <!-- Code lines injected via JS -->
+          </div>
+        </div>
+
+        <!-- Live Local & Union-Find State Inspector -->
+        <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-lg flex flex-col gap-3.5">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Live Local &amp; UF State</h2>
+            <span class="text-[11px] font-mono text-slate-400">
+              len(nums) = <strong id="stateLenNums" class="text-indigo-300">0</strong>
+            </span>
+          </div>
+
+          <!-- Local Factorization Variables: i, n, f -->
+          <div class="grid grid-cols-4 gap-2">
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+              <div class="text-[11px] font-mono text-slate-400">i</div>
+              <div id="stateI" class="text-sm font-mono font-bold text-amber-300 mt-0.5">—</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+              <div class="text-[11px] font-mono text-slate-400">n (rem)</div>
+              <div id="stateN" class="text-sm font-mono font-bold text-indigo-300 mt-0.5">—</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+              <div class="text-[11px] font-mono text-slate-400">f (factor)</div>
+              <div id="stateF" class="text-sm font-mono font-bold text-sky-300 mt-0.5">—</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+              <div class="text-[11px] font-mono text-slate-400">uf.n</div>
+              <div id="stateUfN" class="text-sm font-mono font-bold text-emerald-400 mt-0.5">—</div>
+            </div>
+          </div>
+
+          <!-- Parent Array -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-mono font-semibold text-slate-300">uf.Parent</span>
+              <span class="text-[10px] font-mono text-slate-500">list(range(len(nums) + 1))</span>
+            </div>
+            <div id="parentArrayBox" class="p-2 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs flex flex-wrap gap-1.5">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+
+          <!-- Size Array -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-mono font-semibold text-slate-300">uf.Size</span>
+              <span class="text-[10px] font-mono text-slate-500">[1] * (len(nums) + 1)</span>
+            </div>
+            <div id="sizeArrayBox" class="p-2 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs flex flex-wrap gap-1.5">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Exact user Python code lines (1-indexed)
+    const PYTHON_LINES = [
+      { line: 1,  text: "class UnionFind:" },
+      { line: 2,  text: "    def __init__(self, n):" },
+      { line: 3,  text: "        self.n = n" },
+      { line: 4,  text: "        self.Parent = list(range(n + 1))" },
+      { line: 5,  text: "        self.Size = [1] * (n + 1)" },
+      { line: 6,  text: "" },
+      { line: 7,  text: "    def find(self, node):" },
+      { line: 8,  text: "        if self.Parent[node] != node:" },
+      { line: 9,  text: "            self.Parent[node] = self.find(self.Parent[node])" },
+      { line: 10, text: "        return self.Parent[node]" },
+      { line: 11, text: "" },
+      { line: 12, text: "    def union(self, u, v):" },
+      { line: 13, text: "        pu = self.find(u)" },
+      { line: 14, text: "        pv = self.find(v)" },
+      { line: 15, text: "        if pu == pv:" },
+      { line: 16, text: "            return False" },
+      { line: 17, text: "        self.n -= 1" },
+      { line: 18, text: "        if self.Size[pu] < self.Size[pv]:" },
+      { line: 19, text: "            pu, pv = pv, pu" },
+      { line: 20, text: "        self.Size[pu] += self.Size[pv]" },
+      { line: 21, text: "        self.Parent[pv] = pu" },
+      { line: 22, text: "        return True" },
+      { line: 23, text: "" },
+      { line: 24, text: "    def isConnected(self):" },
+      { line: 25, text: "        return self.n == 1" },
+      { line: 26, text: "" },
+      { line: 27, text: "class Solution:" },
+      { line: 28, text: "    def canTraverseAllPairs(self, nums: List[int]) -> bool:" },
+      { line: 29, text: "        uf = UnionFind(len(nums))" },
+      { line: 30, text: "" },
+      { line: 31, text: "        factor_index = {}  # f -> index of value with factor f" },
+      { line: 32, text: "        for i, n in enumerate(nums):" },
+      { line: 33, text: "            f = 2" },
+      { line: 34, text: "            while f * f <= n:" },
+      { line: 35, text: "                if n % f == 0:" },
+      { line: 36, text: "                    if f in factor_index:" },
+      { line: 37, text: "                        uf.union(i, factor_index[f])" },
+      { line: 38, text: "                    else:" },
+      { line: 39, text: "                        factor_index[f] = i" },
+      { line: 40, text: "                    while n % f == 0:" },
+      { line: 41, text: "                        n = n // f" },
+      { line: 42, text: "                f += 1" },
+      { line: 43, text: "            if n > 1:" },
+      { line: 44, text: "                if n in factor_index:" },
+      { line: 45, text: "                    uf.union(i, factor_index[n])" },
+      { line: 46, text: "                else:" },
+      { line: 47, text: "                    factor_index[n] = i" },
+      { line: 48, text: "" },
+      { line: 49, text: "        return uf.isConnected()" }
+    ];
+
+    // Component palette for connected components
+    const COMPONENT_COLORS = [
+      { stroke: "#10b981", fill: "#064e3b", text: "#a7f3d0", badge: "bg-emerald-500/15 border-emerald-500/35 text-emerald-300" },
+      { stroke: "#38bdf8", fill: "#0c4a6e", text: "#bae6fd", badge: "bg-sky-500/15 border-sky-500/35 text-sky-300" },
+      { stroke: "#a78bfa", fill: "#3b0764", text: "#ddd6fe", badge: "bg-violet-500/15 border-violet-500/35 text-violet-300" },
+      { stroke: "#f472b6", fill: "#500724", text: "#fbcfe8", badge: "bg-pink-500/15 border-pink-500/35 text-pink-300" },
+      { stroke: "#fb923c", fill: "#431407", text: "#fed7aa", badge: "bg-orange-500/15 border-orange-500/35 text-orange-300" },
+      { stroke: "#2dd4bf", fill: "#042f2e", text: "#99f6e4", badge: "bg-teal-500/15 border-teal-500/35 text-teal-300" }
+    ];
+
+    // State
+    let nums = [2, 3, 6];
+    let steps = [];
+    let currentStep = 0;
+    let isPlaying = false;
+    let playTimer = null;
+    let stepDelay = 750;
+
+    // DOM Elements
+    const numsInput = document.getElementById("numsInput");
+    const loadBtn = document.getElementById("loadBtn");
+    const inputError = document.getElementById("inputError");
+    const presetBtns = document.querySelectorAll(".preset-btn");
+
+    const resetBtn = document.getElementById("resetBtn");
+    const prevBtn = document.getElementById("prevBtn");
+    const playPauseBtn = document.getElementById("playPauseBtn");
+    const playIcon = document.getElementById("playIcon");
+    const pauseIcon = document.getElementById("pauseIcon");
+    const playPauseText = document.getElementById("playPauseText");
+    const nextBtn = document.getElementById("nextBtn");
+    const stepSlider = document.getElementById("stepSlider");
+    const stepCounter = document.getElementById("stepCounter");
+    const speedSelect = document.getElementById("speedSelect");
+
+    const phaseBadge = document.getElementById("phaseBadge");
+    const headerUfN = document.getElementById("headerUfN");
+    const headerConnectedBadge = document.getElementById("headerConnectedBadge");
+    const stepDescription = document.getElementById("stepDescription");
+
+    const forestEdgesLayer = document.getElementById("forestEdgesLayer");
+    const forestNodesLayer = document.getElementById("forestNodesLayer");
+    const indexNodesGrid = document.getElementById("indexNodesGrid");
+
+    const resultBanner = document.getElementById("resultBanner");
+    const resultIcon = document.getElementById("resultIcon");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultMessage = document.getElementById("resultMessage");
+
+    const factorCountBadge = document.getElementById("factorCountBadge");
+    const factorIndexContainer = document.getElementById("factorIndexContainer");
+
+    const codeContainer = document.getElementById("codeContainer");
+    const activeLineBadge = document.getElementById("activeLineBadge");
+    const stateLenNums = document.getElementById("stateLenNums");
+    const stateI = document.getElementById("stateI");
+    const stateN = document.getElementById("stateN");
+    const stateF = document.getElementById("stateF");
+    const stateUfN = document.getElementById("stateUfN");
+    const parentArrayBox = document.getElementById("parentArrayBox");
+    const sizeArrayBox = document.getElementById("sizeArrayBox");
+
+    /**
+     * Render static Python code lines
+     */
+    function renderCodeLines() {
+      codeContainer.innerHTML = "";
+      PYTHON_LINES.forEach((item) => {
+        const div = document.createElement("div");
+        div.id = `py-line-${item.line}`;
+        div.className = "px-3 py-0.5 flex items-center gap-3 border-l-2 border-transparent transition-colors duration-150";
+
+        const ln = document.createElement("span");
+        ln.className = "w-6 text-right text-slate-600 select-none shrink-0 text-[11px]";
+        ln.textContent = item.line;
+
+        const pre = document.createElement("pre");
+        pre.className = "whitespace-pre font-mono";
+        pre.innerHTML = highlightCode(item.text);
+
+        div.appendChild(ln);
+        div.appendChild(pre);
+        codeContainer.appendChild(div);
+      });
+    }
+
+    function highlightCode(text) {
+      if (!text) return " ";
+      const escaped = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      // Separate trailing comment if present
+      const commentIdx = escaped.indexOf("#");
+      let codePart = commentIdx >= 0 ? escaped.slice(0, commentIdx) : escaped;
+      const commentPart = commentIdx >= 0 ? `<span class="text-slate-500 italic">${escaped.slice(commentIdx)}</span>` : "";
+
+      codePart = codePart.replace(
+        /\b(class|def|for|in|if|else|while|return|True|False)\b/g,
+        '<span class="text-purple-400 font-medium">$1</span>'
+      );
+      codePart = codePart.replace(
+        /\b(len|range|enumerate|List|int|bool)\b/g,
+        '<span class="text-sky-400">$1</span>'
+      );
+      codePart = codePart.replace(
+        /\b(UnionFind|Solution|canTraverseAllPairs|find|union|isConnected)\b/g,
+        '<span class="text-amber-300">$1</span>'
+      );
+
+      return codePart + commentPart;
+    }
+
+    /**
+     * Build detailed step-by-step execution trace matching the user's exact UnionFind + Solution code
+     */
+    function buildTrace(arr) {
+      const len = arr.length;
+      let ufN = len;
+      const parent = Array.from({ length: len + 1 }, (_, idx) => idx);
+      const size = new Array(len + 1).fill(1);
+      const factorIndex = {}; // factor -> first index
+      const trace = [];
+
+      function pushSnap(meta) {
+        trace.push({
+          phase: meta.phase,
+          line: meta.line,
+          description: meta.description,
+          i: meta.i !== undefined ? meta.i : null,
+          nVal: meta.nVal !== undefined ? meta.nVal : null,
+          fVal: meta.fVal !== undefined ? meta.fVal : null,
+          ufN,
+          parent: [...parent],
+          size: [...size],
+          factorIndex: { ...factorIndex },
+          activeIndexNode: meta.activeIndexNode !== undefined ? meta.activeIndexNode : null,
+          highlightFactor: meta.highlightFactor !== undefined ? meta.highlightFactor : null,
+          unionEdge: meta.unionEdge || null,          // { u, v, pu, pv, merged }
+          compressNodes: meta.compressNodes || [],   // array of node indices compressed/visited in find
+          finalResult: meta.finalResult || null
+        });
+      }
+
+      // Step 0: Initial state
+      pushSnap({
+        phase: "Initialization",
+        line: 31,
+        description: `Initialized uf = UnionFind(${len}) with uf.n = ${len}, Parent[0..${len}], Size[0..${len}] = 1, and empty factor_index = {}.`,
+        i: null,
+        nVal: null,
+        fVal: null
+      });
+
+      // Helper that mirrors UnionFind.find with path compression trace steps
+      function findWithTrace(startNode, curI, curN, curF, activeFactor) {
+        const path = [];
+        let curr = startNode;
+        while (parent[curr] !== curr) {
+          path.push(curr);
+          curr = parent[curr];
+        }
+        const root = curr;
+
+        // If path has nodes whose parent wasn't already root, compress them
+        if (path.length > 0) {
+          for (let k = path.length - 1; k >= 0; k--) {
+            const nodeToUpdate = path[k];
+            if (parent[nodeToUpdate] !== root) {
+              const oldParent = parent[nodeToUpdate];
+              parent[nodeToUpdate] = root;
+              pushSnap({
+                phase: "Path Compression",
+                line: 9,
+                description: `find(${startNode}): path compression updated Parent[${nodeToUpdate}] from ${oldParent} → root ${root}.`,
+                i: curI,
+                nVal: curN,
+                fVal: curF,
+                activeIndexNode: curI,
+                highlightFactor: activeFactor,
+                compressNodes: [nodeToUpdate, root]
+              });
+            }
+          }
+        }
+        return root;
+      }
+
+      // Helper that mirrors UnionFind.union
+      function unionWithTrace(u, v, factorUsed, curI, curN, curF) {
+        const pu = findWithTrace(u, curI, curN, curF, factorUsed);
+        const pv = findWithTrace(v, curI, curN, curF, factorUsed);
+
+        if (pu === pv) {
+          pushSnap({
+            phase: "Union Check",
+            line: 16,
+            description: `union(${u}, ${v}) for factor ${factorUsed}: pu (${pu}) == pv (${pv}) — already in same component! Returns False (uf.n stays ${ufN}).`,
+            i: curI,
+            nVal: curN,
+            fVal: curF,
+            activeIndexNode: curI,
+            highlightFactor: factorUsed,
+            unionEdge: { u, v, pu, pv, merged: false }
+          });
+          return false;
+        }
+
+        ufN -= 1;
+        let finalPu = pu;
+        let finalPv = pv;
+        if (size[finalPu] < size[finalPv]) {
+          [finalPu, finalPv] = [finalPv, finalPu];
+        }
+        size[finalPu] += size[finalPv];
+        parent[finalPv] = finalPu;
+
+        pushSnap({
+          phase: "Union by Size",
+          line: 21,
+          description: `union(${u}, ${v}) via shared prime factor ${factorUsed}: merged root ${finalPv} into ${finalPu} (Size[${finalPu}] = ${size[finalPu]}). uf.n decremented to ${ufN}.`,
+          i: curI,
+          nVal: curN,
+          fVal: curF,
+          activeIndexNode: curI,
+          highlightFactor: factorUsed,
+          unionEdge: { u, v, pu: finalPu, pv: finalPv, merged: true }
+        });
+        return true;
+      }
+
+      // Loop through nums
+      for (let i = 0; i < len; i++) {
+        let curN = arr[i];
+        pushSnap({
+          phase: "Factorize Element",
+          line: 32,
+          description: `Processing index i = ${i} with value nums[${i}] = ${arr[i]} (n = ${curN}).`,
+          i,
+          nVal: curN,
+          fVal: null,
+          activeIndexNode: i
+        });
+
+        let f = 2;
+        while (f * f <= curN) {
+          pushSnap({
+            phase: "Trial Division",
+            line: 34,
+            description: `Checking f = ${f} (f² = ${f * f} ≤ n = ${curN}) for index i = ${i}.`,
+            i,
+            nVal: curN,
+            fVal: f,
+            activeIndexNode: i
+          });
+
+          if (curN % f === 0) {
+            if (Object.prototype.hasOwnProperty.call(factorIndex, f)) {
+              const firstIdx = factorIndex[f];
+              pushSnap({
+                phase: "Prime Factor Match",
+                line: 37,
+                description: `Factor f = ${f} divides ${curN} and already exists in factor_index[${f}] = ${firstIdx}. Calling uf.union(${i}, ${firstIdx}).`,
+                i,
+                nVal: curN,
+                fVal: f,
+                activeIndexNode: i,
+                highlightFactor: f
+              });
+              unionWithTrace(i, firstIdx, f, i, curN, f);
+            } else {
+              factorIndex[f] = i;
+              pushSnap({
+                phase: "Record Prime Factor",
+                line: 39,
+                description: `Factor f = ${f} divides ${curN} and is new! Recorded factor_index[${f}] = ${i}.`,
+                i,
+                nVal: curN,
+                fVal: f,
+                activeIndexNode: i,
+                highlightFactor: f
+              });
+            }
+
+            while (curN % f === 0) {
+              curN = Math.floor(curN / f);
+              pushSnap({
+                phase: "Divide Out Factor",
+                line: 41,
+                description: `Divided out factor ${f}: n is now ${curN}.`,
+                i,
+                nVal: curN,
+                fVal: f,
+                activeIndexNode: i,
+                highlightFactor: f
+              });
+            }
+          }
+          f += 1;
+        }
+
+        // Remaining prime factor > sqrt(original n)
+        pushSnap({
+          phase: "Remainder Check",
+          line: 43,
+          description: `Finished f² ≤ n loop for i = ${i}. Checking if remaining n (${curN}) > 1.`,
+          i,
+          nVal: curN,
+          fVal: f,
+          activeIndexNode: i
+        });
+
+        if (curN > 1) {
+          if (Object.prototype.hasOwnProperty.call(factorIndex, curN)) {
+            const firstIdx = factorIndex[curN];
+            pushSnap({
+              phase: "Prime Factor Match",
+              line: 45,
+              description: `Remaining prime factor ${curN} is already in factor_index[${curN}] = ${firstIdx}. Calling uf.union(${i}, ${firstIdx}).`,
+              i,
+              nVal: curN,
+              fVal: curN,
+              activeIndexNode: i,
+              highlightFactor: curN
+            });
+            unionWithTrace(i, firstIdx, curN, i, curN, curN);
+          } else {
+            factorIndex[curN] = i;
+            pushSnap({
+              phase: "Record Prime Factor",
+              line: 47,
+              description: `Remaining prime factor ${curN} is new! Recorded factor_index[${curN}] = ${i}.`,
+              i,
+              nVal: curN,
+              fVal: curN,
+              activeIndexNode: i,
+              highlightFactor: curN
+            });
+          }
+        }
+      }
+
+      // Final check: uf.isConnected() -> uf.n == 1
+      const connected = ufN === 1;
+      pushSnap({
+        phase: "Connectivity Check",
+        line: 49,
+        description: `All elements processed. Calling uf.isConnected() → uf.n == ${ufN} == 1 is ${connected ? "True" : "False"}.`,
+        i: null,
+        nVal: null,
+        fVal: null,
+        finalResult: {
+          connected,
+          ufN,
+          arr: [...arr]
+        }
+      });
+
+      return trace;
+    }
+
+    /**
+     * Compute root for any node in current parent array (without mutating)
+     */
+    function peekRoot(parentArr, node) {
+      let curr = node;
+      const seen = new Set();
+      while (parentArr[curr] !== curr && !seen.has(curr)) {
+        seen.add(curr);
+        curr = parentArr[curr];
+      }
+      return curr;
+    }
+
+    /**
+     * Render a single snapshot
+     */
+    function renderStep(idx) {
+      const snap = steps[idx];
+      if (!snap) return;
+
+      // Phase badge & narrative
+      phaseBadge.textContent = snap.phase;
+      stepDescription.textContent = snap.description;
+
+      // Header UF status
+      headerUfN.textContent = snap.ufN;
+      const isNowOne = snap.ufN === 1;
+      headerConnectedBadge.textContent = `uf.n == 1: ${isNowOne ? "True" : "False"}`;
+      headerConnectedBadge.className = isNowOne
+        ? "px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 font-semibold"
+        : "px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300";
+
+      // Highlight Python line
+      PYTHON_LINES.forEach((item) => {
+        const el = document.getElementById(`py-line-${item.line}`);
+        if (!el) return;
+        if (item.line === snap.line) {
+          el.classList.add("bg-indigo-500/20", "border-indigo-400");
+          el.classList.remove("border-transparent");
+          el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        } else {
+          el.classList.remove("bg-indigo-500/20", "border-indigo-400");
+          el.classList.add("border-transparent");
+        }
+      });
+      activeLineBadge.textContent = `Line ${snap.line}`;
+
+      // Local & UF registers
+      stateLenNums.textContent = nums.length;
+      stateI.textContent = snap.i !== null ? snap.i : "—";
+      stateN.textContent = snap.nVal !== null ? snap.nVal : "—";
+      stateF.textContent = snap.fVal !== null ? snap.fVal : "—";
+      stateUfN.textContent = snap.ufN;
+
+      // Parent & Size arrays (for indices 0..len(nums)-1, plus note if needed)
+      parentArrayBox.innerHTML = "";
+      sizeArrayBox.innerHTML = "";
+      for (let k = 0; k < nums.length; k++) {
+        const pPill = document.createElement("span");
+        const isComp = snap.compressNodes.includes(k);
+        pPill.className = `px-2 py-0.5 rounded-md border ${
+          isComp
+            ? "bg-sky-500/20 border-sky-400 text-sky-200 font-bold"
+            : "bg-slate-900 border-slate-800 text-slate-300"
+        }`;
+        pPill.textContent = `[${k}]→${snap.parent[k]}`;
+        parentArrayBox.appendChild(pPill);
+
+        const sPill = document.createElement("span");
+        const isMergedTarget = snap.unionEdge && snap.unionEdge.merged && snap.unionEdge.pu === k;
+        sPill.className = `px-2 py-0.5 rounded-md border ${
+          isMergedTarget
+            ? "bg-emerald-500/20 border-emerald-400 text-emerald-200 font-bold"
+            : "bg-slate-900 border-slate-800 text-slate-300"
+        }`;
+        sPill.textContent = `[${k}]:${snap.size[k]}`;
+        sizeArrayBox.appendChild(sPill);
+      }
+
+      // factor_index hash map cards
+      const entries = Object.entries(snap.factorIndex);
+      factorCountBadge.textContent = `${entries.length} ${entries.length === 1 ? "entry" : "entries"}`;
+      if (entries.length === 0) {
+        factorIndexContainer.innerHTML = `<span class="text-xs font-mono text-slate-500 italic">factor_index = {} (empty)</span>`;
+      } else {
+        factorIndexContainer.innerHTML = "";
+        entries.forEach(([factorKey, firstIdx]) => {
+          const isHighlighted = String(snap.highlightFactor) === String(factorKey);
+          const card = document.createElement("div");
+          card.className = `px-3 py-1.5 rounded-xl font-mono text-xs flex items-center gap-2 border transition-all animate-pop ${
+            isHighlighted
+              ? "bg-amber-500/20 border-amber-400 text-amber-200 shadow-md shadow-amber-500/15 scale-105"
+              : "bg-slate-950 border-slate-800 text-slate-300"
+          }`;
+          card.innerHTML = `
+            <span class="text-indigo-400 font-bold">p=${factorKey}</span>
+            <span class="text-slate-600">→</span>
+            <span class="text-emerald-300 font-semibold">idx ${firstIdx}</span>
+            <span class="text-[10px] text-slate-500">(val ${nums[firstIdx]})</span>
+          `;
+          factorIndexContainer.appendChild(card);
+        });
+      }
+
+      // Index nodes strip
+      renderIndexNodesGrid(snap);
+
+      // SVG Union-Find Forest
+      renderForestSvg(snap);
+
+      // Final Result Banner
+      if (snap.finalResult) {
+        resultBanner.classList.remove("hidden");
+        if (snap.finalResult.connected) {
+          resultBanner.className = "rounded-2xl p-4 border border-emerald-500/35 bg-emerald-500/10 text-emerald-100 shadow-lg";
+          resultIcon.className = "w-9 h-9 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center shrink-0 font-bold text-lg";
+          resultIcon.textContent = "✓";
+          resultTitle.textContent = "Return True — uf.isConnected() is True (uf.n == 1)";
+          resultMessage.textContent = `All ${nums.length} index nodes were unified into a single connected component sharing prime factors.`;
+        } else {
+          resultBanner.className = "rounded-2xl p-4 border border-rose-500/35 bg-rose-500/10 text-rose-100 shadow-lg";
+          resultIcon.className = "w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 font-bold text-lg";
+          resultIcon.textContent = "✕";
+          resultTitle.textContent = `Return False — uf.isConnected() is False (uf.n == ${snap.finalResult.ufN})`;
+          const hasOne = snap.finalResult.arr.includes(1);
+          resultMessage.textContent = hasOne
+            ? `There are ${snap.finalResult.ufN} separate components because element 1 has no prime factors and cannot union with any other index.`
+            : `There are ${snap.finalResult.ufN} disjoint components remaining; not all pairs share a chain of prime factors.`;
+        }
+      } else {
+        resultBanner.classList.add("hidden");
+      }
+
+      // Sync slider & buttons
+      stepSlider.value = idx;
+      stepCounter.textContent = `Step ${idx} / ${steps.length - 1}`;
+      prevBtn.disabled = idx === 0;
+      nextBtn.disabled = idx === steps.length - 1;
+    }
+
+    /**
+     * Assign consistent color per root component
+     */
+    function getRootColorMap(parentArr) {
+      const roots = [];
+      for (let i = 0; i < nums.length; i++) {
+        const r = peekRoot(parentArr, i);
+        if (!roots.includes(r)) roots.push(r);
+      }
+      roots.sort((a, b) => a - b);
+      const map = {};
+      roots.forEach((r, idx) => {
+        map[r] = COMPONENT_COLORS[idx % COMPONENT_COLORS.length];
+      });
+      return map;
+    }
+
+    function renderIndexNodesGrid(snap) {
+      indexNodesGrid.innerHTML = "";
+      const colorMap = getRootColorMap(snap.parent);
+
+      for (let i = 0; i < nums.length; i++) {
+        const root = peekRoot(snap.parent, i);
+        const pal = colorMap[root];
+        const isActiveI = snap.i === i;
+        const isComp = snap.compressNodes.includes(i);
+
+        const card = document.createElement("div");
+        card.className = `rounded-xl p-2.5 border transition-all ${pal.badge} ${
+          isActiveI ? "ring-2 ring-amber-400 scale-[1.02]" : ""
+        } ${isComp ? "ring-2 ring-sky-400" : ""}`;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between text-[11px] font-mono opacity-85">
+            <span>idx <strong>${i}</strong></span>
+            <span>root <strong>${root}</strong></span>
+          </div>
+          <div class="text-base font-mono font-bold text-white mt-0.5">
+            val: ${nums[i]}
+          </div>
+          <div class="mt-1.5 pt-1.5 border-t border-white/10 flex items-center justify-between text-[10.5px] font-mono">
+            <span>P[${i}]=${snap.parent[i]}</span>
+            <span>S[${i}]=${snap.size[i]}</span>
+          </div>
+        `;
+        indexNodesGrid.appendChild(card);
+      }
+    }
+
+    function renderForestSvg(snap) {
+      forestEdgesLayer.innerHTML = "";
+      forestNodesLayer.innerHTML = "";
+
+      const n = nums.length;
+      const colorMap = getRootColorMap(snap.parent);
+
+      // Arrange nodes evenly across SVG width
+      const marginX = 70;
+      const usableW = Math.max(120, 680 - marginX * 2);
+      const stepX = n > 1 ? usableW / (n - 1) : 0;
+
+      // Compute depth of each node to show tree hierarchy cleanly
+      const depths = new Array(n).fill(0);
+      for (let i = 0; i < n; i++) {
+        let d = 0;
+        let curr = i;
+        const visited = new Set();
+        while (snap.parent[curr] !== curr && snap.parent[curr] < n && !visited.has(curr)) {
+          visited.add(curr);
+          curr = snap.parent[curr];
+          d += 1;
+        }
+        depths[i] = d;
+      }
+      const maxDepth = Math.max(1, ...depths);
+
+      const coords = [];
+      for (let i = 0; i < n; i++) {
+        const x = n === 1 ? 340 : marginX + i * stepX;
+        // Root at top (y=75), deeper children lower (up to y=235)
+        const y = 75 + (depths[i] / maxDepth) * 145;
+        coords.push({ x, y });
+      }
+
+      // Draw parent pointers (node -> Parent[node]) where Parent[node] !== node
+      for (let i = 0; i < n; i++) {
+        const p = snap.parent[i];
+        if (p !== i && p < n) {
+          const from = coords[i];
+          const to = coords[p];
+          const isCompEdge = snap.compressNodes.includes(i);
+          const isUnionEdge = snap.unionEdge && snap.unionEdge.merged && (snap.unionEdge.pv === i || snap.unionEdge.pu === i);
+
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          const midX = (from.x + to.x) / 2;
+          const midY = (from.y + to.y) / 2 - 22;
+          const dStr = `M ${from.x} ${from.y} Q ${midX} ${midY} ${to.x} ${to.y}`;
+
+          path.setAttribute("d", dStr);
+          path.setAttribute("fill", "none");
+          path.setAttribute("stroke", isCompEdge ? "#38bdf8" : (isUnionEdge ? "#fbbf24" : "#64748b"));
+          path.setAttribute("stroke-width", isCompEdge || isUnionEdge ? "3" : "2");
+          if (isCompEdge) path.setAttribute("stroke-dasharray", "5 4");
+          path.setAttribute("marker-end", isCompEdge ? "url(#arrowCompress)" : (isUnionEdge ? "url(#arrowUnion)" : "url(#arrowDefault)"));
+          forestEdgesLayer.appendChild(path);
+        }
+      }
+
+      // Draw nodes
+      for (let i = 0; i < n; i++) {
+        const { x, y } = coords[i];
+        const root = peekRoot(snap.parent, i);
+        const pal = colorMap[root];
+        const isRoot = snap.parent[i] === i;
+        const isActiveI = snap.i === i;
+        const isComp = snap.compressNodes.includes(i);
+
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+        if (isActiveI || isComp) {
+          const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          ring.setAttribute("cx", x);
+          ring.setAttribute("cy", y);
+          ring.setAttribute("r", "28");
+          ring.setAttribute("fill", "none");
+          ring.setAttribute("stroke", isComp ? "#38bdf8" : "#fbbf24");
+          ring.setAttribute("stroke-width", "2.5");
+          ring.setAttribute("class", "animate-pulse-ring");
+          g.appendChild(ring);
+        }
+
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", x);
+        circle.setAttribute("cy", y);
+        circle.setAttribute("r", "24");
+        circle.setAttribute("fill", pal.fill);
+        circle.setAttribute("stroke", isActiveI ? "#fbbf24" : (isComp ? "#38bdf8" : pal.stroke));
+        circle.setAttribute("stroke-width", isActiveI || isComp ? "3.5" : "2.5");
+        g.appendChild(circle);
+
+        // Node index label inside circle
+        const idxLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        idxLabel.setAttribute("x", x);
+        idxLabel.setAttribute("y", y + 4);
+        idxLabel.setAttribute("text-anchor", "middle");
+        idxLabel.setAttribute("font-size", "13");
+        idxLabel.setAttribute("font-family", "JetBrains Mono, monospace");
+        idxLabel.setAttribute("font-weight", "700");
+        idxLabel.setAttribute("fill", "#ffffff");
+        idxLabel.textContent = i;
+        g.appendChild(idxLabel);
+
+        // Value label below node
+        const valLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        valLabel.setAttribute("x", x);
+        valLabel.setAttribute("y", y + 40);
+        valLabel.setAttribute("text-anchor", "middle");
+        valLabel.setAttribute("font-size", "11");
+        valLabel.setAttribute("font-family", "JetBrains Mono, monospace");
+        valLabel.setAttribute("font-weight", "600");
+        valLabel.setAttribute("fill", pal.text);
+        valLabel.textContent = `val:${nums[i]}`;
+        g.appendChild(valLabel);
+
+        // Root badge above root nodes
+        if (isRoot) {
+          const rootTag = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          rootTag.setAttribute("x", x);
+          rootTag.setAttribute("y", y - 32);
+          rootTag.setAttribute("text-anchor", "middle");
+          rootTag.setAttribute("font-size", "10");
+          rootTag.setAttribute("font-family", "JetBrains Mono, monospace");
+          rootTag.setAttribute("fill", "#94a3b8");
+          rootTag.textContent = `root (sz:${snap.size[i]})`;
+          g.appendChild(rootTag);
+        }
+
+        forestNodesLayer.appendChild(g);
+      }
+    }
+
+    /**
+     * Playback Controls
+     */
+    function stopPlay() {
+      isPlaying = false;
+      if (playTimer) {
+        clearInterval(playTimer);
+        playTimer = null;
+      }
+      playIcon.classList.remove("hidden");
+      pauseIcon.classList.add("hidden");
+      playPauseText.textContent = "Play";
+    }
+
+    function startPlay() {
+      if (currentStep >= steps.length - 1) {
+        currentStep = 0;
+        renderStep(currentStep);
+      }
+      isPlaying = true;
+      playIcon.classList.add("hidden");
+      pauseIcon.classList.remove("hidden");
+      playPauseText.textContent = "Pause";
+
+      playTimer = setInterval(() => {
+        if (currentStep < steps.length - 1) {
+          currentStep += 1;
+          renderStep(currentStep);
+        } else {
+          stopPlay();
+        }
+      }, stepDelay);
+    }
+
+    function togglePlay() {
+      if (isPlaying) stopPlay();
+      else startPlay();
+    }
+
+    /**
+     * Parse & validate custom comma-separated input
+     */
+    function loadArray(raw) {
+      stopPlay();
+      inputError.classList.add("hidden");
+
+      const tokens = raw.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+      if (tokens.length === 0) {
+        showErr("Please enter at least 1 positive integer.");
+        return;
+      }
+      if (tokens.length > 10) {
+        showErr("Please enter up to 10 integers so the Union-Find forest remains clear.");
+        return;
+      }
+
+      const parsed = [];
+      for (const tok of tokens) {
+        if (!/^\d+$/.test(tok)) {
+          showErr(`Invalid token "${tok}". Enter positive integers separated by commas.`);
+          return;
+        }
+        const val = parseInt(tok, 10);
+        if (val < 1 || val > 100000) {
+          showErr("Values must be integers between 1 and 100,000.");
+          return;
+        }
+        parsed.push(val);
+      }
+
+      nums = parsed;
+      steps = buildTrace(nums);
+      currentStep = 0;
+      stepSlider.max = steps.length - 1;
+      stepSlider.value = 0;
+      renderStep(0);
+    }
+
+    function showErr(msg) {
+      inputError.textContent = msg;
+      inputError.classList.remove("hidden");
+    }
+
+    // Event bindings
+    loadBtn.addEventListener("click", () => loadArray(numsInput.value));
+    numsInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") loadArray(numsInput.value);
+    });
+
+    presetBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const val = btn.getAttribute("data-preset");
+        numsInput.value = val;
+        loadArray(val);
+      });
+    });
+
+    playPauseBtn.addEventListener("click", togglePlay);
+    resetBtn.addEventListener("click", () => {
+      stopPlay();
+      currentStep = 0;
+      renderStep(currentStep);
+    });
+    prevBtn.addEventListener("click", () => {
+      stopPlay();
+      if (currentStep > 0) {
+        currentStep -= 1;
+        renderStep(currentStep);
+      }
+    });
+    nextBtn.addEventListener("click", () => {
+      stopPlay();
+      if (currentStep < steps.length - 1) {
+        currentStep += 1;
+        renderStep(currentStep);
+      }
+    });
+
+    stepSlider.addEventListener("input", (e) => {
+      stopPlay();
+      currentStep = parseInt(e.target.value, 10);
+      renderStep(currentStep);
+    });
+
+    speedSelect.addEventListener("change", (e) => {
+      stepDelay = parseInt(e.target.value, 10);
+      if (isPlaying) {
+        stopPlay();
+        startPlay();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (document.activeElement === numsInput) return;
+      if (e.key === " ") {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        nextBtn.click();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prevBtn.click();
+      }
+    });
+
+    // Boot
+    window.addEventListener("DOMContentLoaded", () => {
+      renderCodeLines();
+      loadArray(numsInput.value);
+    });
+  </script>
+</body>
+</html>
