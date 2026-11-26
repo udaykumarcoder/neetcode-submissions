@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeetCode 787: Cheapest Flights Within K Stops — Bellman-Ford Visualizer</title>
+  <style>
+    :root {
+      --bg-app: #0d1017;
+      --bg-panel: #151923;
+      --bg-card: #1b202d;
+      --bg-inset: #10131b;
+      --border-subtle: #283042;
+      --border-strong: #3b4661;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --sky: #38bdf8;
+      --sky-soft: rgba(56, 189, 248, 0.16);
+      --amber: #f59e0b;
+      --amber-soft: rgba(245, 158, 11, 0.16);
+      --emerald: #10b981;
+      --emerald-soft: rgba(16, 185, 129, 0.16);
+      --rose: #f43f5e;
+      --rose-soft: rgba(244, 63, 94, 0.16);
+      --purple: #a855f7;
+      --purple-soft: rgba(168, 85, 247, 0.16);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.45;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-inset);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #323c52;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475573;
+    }
+
+    .container {
+      max-width: 1620px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 18px;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .header-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--sky), var(--emerald));
+      color: #080c14;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+    }
+
+    .pill-sky {
+      background: var(--sky-soft);
+      color: #7dd3fc;
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    .pill-slate {
+      background: #222838;
+      color: var(--text-secondary);
+      border-color: var(--border-subtle);
+    }
+
+    .presets-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background-color: var(--bg-card);
+      color: var(--text-primary);
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background-color 0.15s, border-color 0.15s, transform 0.08s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: #252c3e;
+      border-color: var(--border-strong);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    button.preset-active {
+      background-color: var(--sky-soft);
+      border-color: rgba(56, 189, 248, 0.55);
+      color: #7dd3fc;
+      font-weight: 600;
+    }
+
+    button.btn-primary {
+      background-color: var(--sky);
+      border-color: var(--sky);
+      color: #090d16;
+      font-weight: 700;
+    }
+
+    button.btn-primary:hover:not(:disabled) {
+      background-color: #7dd3fc;
+      border-color: #7dd3fc;
+    }
+
+    /* Custom Input Editor Bar */
+    .custom-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .field-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    .field-group.grow {
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .custom-input {
+      background-color: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 5px 8px;
+      border-radius: 7px;
+      outline: none;
+    }
+
+    .custom-input:focus {
+      border-color: var(--sky);
+    }
+
+    .input-sm {
+      width: 54px;
+      text-align: center;
+    }
+
+    .input-flights {
+      width: 100%;
+    }
+
+    .error-msg {
+      color: #fda4af;
+      font-size: 11.5px;
+      font-family: var(--font-mono);
+      display: none;
+    }
+
+    /* Playback Subheader */
+    .playback-bar {
+      background-color: #121620;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 10px 18px;
+    }
+
+    .playback-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .controls-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .step-counter {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      padding: 5px 10px;
+      border-radius: 8px;
+      color: var(--text-secondary);
+    }
+
+    .step-counter strong {
+      color: var(--sky);
+    }
+
+    .speed-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    .speed-box input[type="range"] {
+      width: 75px;
+      accent-color: var(--sky);
+      cursor: pointer;
+    }
+
+    .status-banner {
+      flex: 1;
+      min-width: 280px;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 7px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 38px;
+    }
+
+    .status-badge {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .badge-sky { background: var(--sky-soft); color: #7dd3fc; border-color: rgba(56, 189, 248, 0.35); }
+    .badge-amber { background: var(--amber-soft); color: #fcd34d; border-color: rgba(245, 158, 11, 0.35); }
+    .badge-emerald { background: var(--emerald-soft); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); }
+    .badge-purple { background: var(--purple-soft); color: #d8b4fe; border-color: rgba(168, 85, 247, 0.35); }
+    .badge-rose { background: var(--rose-soft); color: #fda4af; border-color: rgba(244, 63, 94, 0.4); }
+    .badge-slate { background: #262d3d; color: #cbd5e1; border-color: #3b4661; }
+
+    .status-text {
+      font-size: 12.5px;
+      color: var(--text-primary);
+    }
+
+    .status-text code {
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.07);
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-size: 11.5px;
+    }
+
+    /* Main Workspace Grid */
+    main {
+      flex: 1;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 1.38fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    @media (max-width: 1080px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .col-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      min-width: 0;
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* SVG Weighted Graph */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 1.5px solid transparent;
+    }
+
+    .svg-wrap {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    svg#graph-svg {
+      width: 100%;
+      height: 340px;
+      display: block;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .graph-node {
+      cursor: grab;
+    }
+    .graph-node:active {
+      cursor: grabbing;
+    }
+
+    /* Active Edge Calculation & Return Banner */
+    .eval-grid {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 680px) {
+      .eval-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sub-box {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 9px 11px;
+    }
+
+    .sub-box-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+
+    .calc-formula {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      min-height: 26px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* Side-by-Side Arrays: prices vs tmpPrices */
+    .arrays-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 720px) {
+      .arrays-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .array-panel {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .array-panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      margin-bottom: 8px;
+    }
+
+    .cells-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+      gap: 6px;
+    }
+
+    .arr-cell {
+      background: #171c28;
+      border: 1px solid #2e374d;
+      border-radius: 8px;
+      padding: 6px 4px;
+      text-align: center;
+      font-family: var(--font-mono);
+      transition: transform 0.12s, border-color 0.15s, background-color 0.15s;
+    }
+
+    .arr-cell.read-src {
+      background: var(--sky-soft);
+      border-color: var(--sky);
+    }
+
+    .arr-cell.read-inf {
+      background: var(--rose-soft);
+      border-color: rgba(244, 63, 94, 0.55);
+    }
+
+    .arr-cell.write-dst {
+      background: var(--emerald-soft);
+      border-color: var(--emerald);
+      transform: translateY(-2px);
+    }
+
+    .arr-cell.check-dst {
+      background: var(--amber-soft);
+      border-color: var(--amber);
+    }
+
+    .arr-idx {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .arr-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .arr-tag {
+      font-size: 9px;
+      margin-top: 2px;
+      height: 12px;
+      font-weight: 700;
+    }
+
+    .layer-note {
+      margin-top: 10px;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 11.5px;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* Flights Edge List */
+    .flights-ribbon {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .flight-chip {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 7px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .flight-chip.active-relaxed {
+      background: var(--emerald-soft);
+      border-color: var(--emerald);
+      color: #6ee7b7;
+      font-weight: 700;
+    }
+
+    .flight-chip.active-eval {
+      background: var(--amber-soft);
+      border-color: var(--amber);
+      color: #fde68a;
+      font-weight: 700;
+    }
+
+    .flight-chip.active-skip {
+      background: var(--rose-soft);
+      border-color: rgba(244, 63, 94, 0.55);
+      color: #fda4af;
+    }
+
+    /* Right Column: Local Variables + Code */
+    .vars-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      font-family: var(--font-mono);
+      text-align: center;
+    }
+
+    @media (max-width: 540px) {
+      .vars-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .var-box {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 6px 4px;
+    }
+
+    .var-name {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .var-val {
+      font-size: 12.5px;
+      font-weight: 700;
+      margin-top: 2px;
+      color: var(--text-primary);
+    }
+
+    .code-card {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .code-header {
+      background: #1c2230;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .window-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .code-body {
+      padding: 10px 0;
+      font-family: var(--font-mono);
+      font-size: 12.2px;
+      line-height: 1.65;
+      overflow-x: auto;
+    }
+
+    .code-line {
+      display: flex;
+      padding: 1px 12px;
+      border-left: 3px solid transparent;
+      white-space: pre;
+    }
+
+    .code-line.hl-amber {
+      background: rgba(245, 158, 11, 0.16);
+      border-left-color: var(--amber);
+    }
+
+    .code-line.hl-emerald {
+      background: rgba(16, 185, 129, 0.17);
+      border-left-color: var(--emerald);
+    }
+
+    .code-line.hl-rose {
+      background: rgba(244, 63, 94, 0.18);
+      border-left-color: var(--rose);
+    }
+
+    .code-line.hl-sky {
+      background: rgba(56, 189, 248, 0.16);
+      border-left-color: var(--sky);
+    }
+
+    .line-num {
+      width: 26px;
+      color: var(--text-muted);
+      user-select: none;
+      text-align: right;
+      padding-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .kw { color: #c084fc; }
+    .fn { color: #fde68a; }
+    .tp { color: #6ee7b7; }
+    .st { color: #fcd34d; }
+    .num { color: #7dd3fc; }
+    .cm { color: #64748b; font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-badge">787</div>
+          <div>
+            <div class="brand-title">
+              <span>LeetCode 787: Cheapest Flights Within K Stops</span>
+              <span class="pill pill-sky">Bellman-Ford • tmpPrices Layering</span>
+              <span id="meta-pill" class="pill pill-slate">n=4 • src=0 • dst=3 • k=1</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="presets-bar">
+          <span style="font-size:11px; color:var(--text-secondary); margin-right:2px;">Presets:</span>
+          <button id="preset-btn-0" class="preset-active" onclick="selectPreset(0)">1. Classic k=1 (700)</button>
+          <button id="preset-btn-1" onclick="selectPreset(1)">2. Same Graph k=2 (400)</button>
+          <button id="preset-btn-2" onclick="selectPreset(2)">3. Unreachable k=0 (-1)</button>
+          <button id="preset-btn-3" onclick="selectPreset(3)">4. Multi-Path k=2 (50)</button>
+        </div>
+      </div>
+
+      <!-- Custom Input Editor -->
+      <div class="custom-bar">
+        <label class="field-group">
+          <span>n:</span>
+          <input id="inp-n" class="custom-input input-sm" type="number" min="2" max="12" value="4" />
+        </label>
+        <label class="field-group grow">
+          <span>flights:</span>
+          <input id="inp-flights" class="custom-input input-flights" type="text"
+            value="[[0,1,100],[1,2,100],[2,0,100],[1,3,600],[2,3,200]]" />
+        </label>
+        <label class="field-group">
+          <span>src:</span>
+          <input id="inp-src" class="custom-input input-sm" type="number" min="0" max="11" value="0" />
+        </label>
+        <label class="field-group">
+          <span>dst:</span>
+          <input id="inp-dst" class="custom-input input-sm" type="number" min="0" max="11" value="3" />
+        </label>
+        <label class="field-group">
+          <span>k:</span>
+          <input id="inp-k" class="custom-input input-sm" type="number" min="0" max="10" value="1" />
+        </label>
+        <button class="btn-primary" onclick="loadCustomInput()">Load Input</button>
+        <span id="custom-error" class="error-msg"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Playback Controls & Status Banner -->
+  <section class="playback-bar">
+    <div class="container playback-inner">
+      <div class="controls-group">
+        <button id="btn-reset" title="Reset to Step 0 (R)" onclick="resetSteps()">|&lt;&lt;</button>
+        <button id="btn-prev" title="Previous Step (Left Arrow)" onclick="stepBackward()">&lt; Prev</button>
+        <button id="btn-play" class="btn-primary" title="Play / Pause (Space)" onclick="togglePlay()">Play</button>
+        <button id="btn-next" title="Next Step (Right Arrow)" onclick="stepForward()">Next &gt;</button>
+        <button id="btn-end" title="Jump to Final Result" onclick="jumpToEnd()">&gt;&gt;|</button>
+
+        <div class="step-counter">
+          Step <strong id="step-cur">0</strong> / <span id="step-max">0</span>
+        </div>
+
+        <div class="speed-box">
+          <span>Speed</span>
+          <input id="speed-slider" type="range" min="1" max="5" value="3" oninput="onSpeedChange(this.value)" />
+          <span id="speed-label" style="font-family:var(--font-mono); color:var(--text-primary); min-width:30px;">1.0x</span>
+        </div>
+      </div>
+
+      <div class="status-banner">
+        <span id="status-badge" class="status-badge badge-sky">INIT</span>
+        <div id="status-text" class="status-text">Initializing prices array...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Workspace -->
+  <main class="container">
+    <!-- Left Column -->
+    <div class="col-stack">
+
+      <!-- Interactive Directed Weighted Graph -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="status-badge badge-sky">Graph</span>
+            <span>Flight Network</span>
+            <span style="font-size:11px; color:var(--text-muted); font-weight:400;">• Drag cities to rearrange</span>
+          </div>
+
+          <div class="legend">
+            <span class="legend-item"><span class="dot" style="background:rgba(56,189,248,0.35); border-color:#38bdf8;"></span>src</span>
+            <span class="legend-item"><span class="dot" style="background:rgba(16,185,129,0.35); border-color:#10b981;"></span>dst / Relaxed</span>
+            <span class="legend-item"><span class="dot" style="background:rgba(245,158,11,0.35); border-color:#f59e0b;"></span>Checking</span>
+            <span class="legend-item"><span class="dot" style="background:rgba(244,63,94,0.35); border-color:#f43f5e;"></span>Skipped</span>
+          </div>
+        </div>
+
+        <div class="svg-wrap">
+          <svg id="graph-svg" viewBox="0 0 680 340"></svg>
+        </div>
+
+        <!-- Edge Relaxation Formula & Final Return Value -->
+        <div class="eval-grid">
+          <div class="sub-box">
+            <div class="sub-box-head">
+              <span style="color:#7dd3fc; font-weight:700;">Relaxation Check: prices[s] + p &lt; tmpPrices[d]</span>
+              <span id="edge-badge" class="pill pill-slate">Idle</span>
+            </div>
+            <div id="calc-formula" class="calc-formula">
+              <span style="color:var(--text-muted);">Step forward to inspect flight relaxations...</span>
+            </div>
+          </div>
+
+          <div class="sub-box">
+            <div class="sub-box-head">
+              <span style="color:#6ee7b7; font-weight:700;">Return Value</span>
+              <span id="iter-pill" style="color:var(--text-muted);">Iteration i = —</span>
+            </div>
+            <div id="return-box" style="font-family:var(--font-mono); font-size:12px; min-height:26px; display:flex; align-items:center; color:var(--text-muted);">
+              Pending k + 1 iterations...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side-by-Side State Inspection: prices vs tmpPrices -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="status-badge badge-purple">State</span>
+            <span>Layer Isolation: <code style="font-family:var(--font-mono); color:#7dd3fc;">prices</code> (Read-Only) vs <code style="font-family:var(--font-mono); color:#6ee7b7;">tmpPrices</code> (Write Target)</span>
+          </div>
+          <span id="stops-pill" class="pill pill-slate">Max Edges: —</span>
+        </div>
+
+        <div class="arrays-grid">
+          <div class="array-panel">
+            <div class="array-panel-head">
+              <span style="color:#7dd3fc; font-weight:700;">prices (Read Source prices[s])</span>
+              <span style="color:var(--text-muted); font-size:10.5px;">Frozen during iteration i</span>
+            </div>
+            <div id="prices-cells" class="cells-row"></div>
+          </div>
+
+          <div class="array-panel">
+            <div class="array-panel-head">
+              <span style="color:#6ee7b7; font-weight:700;">tmpPrices (Write Target tmpPrices[d])</span>
+              <span style="color:var(--text-muted); font-size:10.5px;">Copied at start of i</span>
+            </div>
+            <div id="tmp-cells" class="cells-row"></div>
+          </div>
+        </div>
+
+        <div class="layer-note">
+          <span>
+            <strong>Why <code>tmpPrices = prices.copy()</code>?</strong> Reading from <code>prices[s]</code> and writing to <code>tmpPrices[d]</code> prevents a newly relaxed edge in iteration <code>i</code> from cascading further in the same round, guaranteeing paths use <strong>at most <code>i + 1</code> flights</strong> (<code>&le; i</code> stops).
+          </span>
+        </div>
+      </div>
+
+      <!-- Flights List Ribbon -->
+      <div class="card" style="padding:12px 16px;">
+        <div class="card-header" style="margin-bottom:8px;">
+          <span class="card-title" style="font-size:12.5px;">Flights Edge List (<code style="font-family:var(--font-mono); color:var(--text-secondary);">[s, d, p]</code>)</span>
+          <span id="flights-count" style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);">0 flights</span>
+        </div>
+        <div id="flights-ribbon" class="flights-ribbon"></div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-stack">
+      <!-- Local Variables -->
+      <div class="card" style="padding:12px 14px;">
+        <div class="card-header" style="margin-bottom:8px;">
+          <span class="card-title" style="font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-secondary);">Local Variables</span>
+          <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);">Python 3 Frame</span>
+        </div>
+        <div class="vars-grid">
+          <div class="var-box"><div class="var-name">i (round)</div><div id="v-i" class="var-val" style="color:#7dd3fc;">—</div></div>
+          <div class="var-box"><div class="var-name">stops (&le;i)</div><div id="v-stops" class="var-val" style="color:#d8b4fe;">—</div></div>
+          <div class="var-box"><div class="var-name">s</div><div id="v-s" class="var-val" style="color:#38bdf8;">—</div></div>
+          <div class="var-box"><div class="var-name">d</div><div id="v-d" class="var-val" style="color:#6ee7b7;">—</div></div>
+          <div class="var-box"><div class="var-name">p</div><div id="v-p" class="var-val" style="color:#fcd34d;">—</div></div>
+          <div class="var-box"><div class="var-name">prices[dst]</div><div id="v-dst" class="var-val" style="color:#f1f5f9;">∞</div></div>
+        </div>
+      </div>
+
+      <!-- Synchronized 16-Line Python Code Panel -->
+      <div class="card code-card">
+        <div class="code-header">
+          <div class="window-dots">
+            <span style="background:#ef4444;"></span>
+            <span style="background:#f59e0b;"></span>
+            <span style="background:#10b981;"></span>
+            <span style="margin-left:6px; color:var(--text-primary); font-weight:600;">solution.py</span>
+          </div>
+          <span>16 Lines • Bellman-Ford</span>
+        </div>
+        <div id="code-body" class="code-body"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // =========================================================================
+    // 1. EXACT 16-LINE PYTHON SOLUTION
+    // =========================================================================
+    const CODE_LINES = [
+      { num: 1,  html: '<span class="kw">class</span> <span class="tp">Solution</span>:' },
+      { num: 2,  html: '    <span class="kw">def</span> <span class="fn">findCheapestPrice</span>(self, n: <span class="tp">int</span>, flights: List[List[<span class="tp">int</span>]], src: <span class="tp">int</span>, dst: <span class="tp">int</span>, k: <span class="tp">int</span>) -&gt; <span class="tp">int</span>:' },
+      { num: 3,  html: '        prices = [<span class="fn">float</span>(<span class="st">"inf"</span>)] * n' },
+      { num: 4,  html: '        prices[src] = <span class="num">0</span>' },
+      { num: 5,  html: '' },
+      { num: 6,  html: '        <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(k + <span class="num">1</span>):' },
+      { num: 7,  html: '            tmpPrices = prices.copy()' },
+      { num: 8,  html: '' },
+      { num: 9,  html: '            <span class="kw">for</span> s, d, p <span class="kw">in</span> flights: <span class="cm"># s=source, d=destination, p=price</span>' },
+      { num: 10, html: '                <span class="kw">if</span> prices[s] == <span class="fn">float</span>(<span class="st">"inf"</span>):' },
+      { num: 11, html: '                    <span class="kw">continue</span>' },
+      { num: 12, html: '                <span class="kw">if</span> prices[s] + p &lt; tmpPrices[d]:' },
+      { num: 13, html: '                    tmpPrices[d] = prices[s] + p' },
+      { num: 14, html: '            prices = tmpPrices' },
+      { num: 15, html: '' },
+      { num: 16, html: '        <span class="kw">return</span> -<span class="num">1</span> <span class="kw">if</span> prices[dst] == <span class="fn">float</span>(<span class="st">"inf"</span>) <span class="kw">else</span> prices[dst]' }
+    ];
+
+    // =========================================================================
+    // 2. PRESETS & GLOBAL STATE
+    // =========================================================================
+    const PRESETS = [
+      {
+        n: 4,
+        flights: [[0, 1, 100], [1, 2, 100], [2, 0, 100], [1, 3, 600], [2, 3, 200]],
+        src: 0,
+        dst: 3,
+        k: 1
+      },
+      {
+        n: 4,
+        flights: [[0, 1, 100], [1, 2, 100], [2, 0, 100], [1, 3, 600], [2, 3, 200]],
+        src: 0,
+        dst: 3,
+        k: 2
+      },
+      {
+        n: 3,
+        flights: [[0, 1, 100], [1, 2, 100]],
+        src: 0,
+        dst: 2,
+        k: 0
+      },
+      {
+        n: 5,
+        flights: [[0, 1, 10], [0, 2, 50], [1, 2, 10], [1, 3, 100], [2, 3, 20], [3, 4, 10]],
+        src: 0,
+        dst: 4,
+        k: 2
+      }
+    ];
+
+    const SPEEDS = {
+      1: { label: "0.5x", ms: 1400 },
+      2: { label: "0.75x", ms: 900 },
+      3: { label: "1.0x", ms: 550 },
+      4: { label: "2.0x", ms: 260 },
+      5: { label: "4.0x", ms: 110 }
+    };
+
+    let state = { n: 4, flights: [], src: 0, dst: 3, k: 1 };
+    let steps = [];
+    let currentStep = 0;
+    let nodePositions = {};
+    let playInterval = null;
+    let speedVal = 3;
+    let draggedNode = null;
+
+    const fmt = (val) => (val === Infinity ? "∞" : String(val));
+
+    // =========================================================================
+    // 3. PRECOMPUTE IMMUTABLE EXECUTION TRACE
+    // =========================================================================
+    function buildTrace({ n, flights, src, dst, k }) {
+      const trace = [];
+      let prices = Array(n).fill(Infinity);
+      let tmpPrices = null;
+
+      // Step 0: prices = [float("inf")] * n
+      trace.push({
+        line: 3,
+        theme: "sky",
+        badge: "INIT",
+        badgeCls: "badge-sky",
+        msg: `Initialized <code>prices = [inf] * ${n}</code> for all ${n} cities.`,
+        vars: { i: "—", stops: "—", s: "—", d: "—", p: "—", dstVal: "∞" },
+        prices: [...prices],
+        tmpPrices: null,
+        flightIdx: -1,
+        edgeState: null, // { s, d, p, type: 'skip_inf' | 'check' | 'relaxed' | 'no_improve', formulaHtml }
+        readSrc: -1,
+        readInf: -1,
+        checkDst: -1,
+        writeDst: -1,
+        result: null
+      });
+
+      // Step 1: prices[src] = 0
+      prices[src] = 0;
+      trace.push({
+        line: 4,
+        theme: "emerald",
+        badge: "SOURCE",
+        badgeCls: "badge-emerald",
+        msg: `Set starting city cost <code>prices[${src}] = 0</code>.`,
+        vars: { i: "—", stops: "—", s: "—", d: "—", p: "—", dstVal: fmt(prices[dst]) },
+        prices: [...prices],
+        tmpPrices: null,
+        flightIdx: -1,
+        edgeState: null,
+        readSrc: src,
+        readInf: -1,
+        checkDst: -1,
+        writeDst: -1,
+        result: null
+      });
+
+      // Outer loop: for i in range(k + 1)
+      for (let i = 0; i <= k; i++) {
+        tmpPrices = [...prices];
+        trace.push({
+          line: 7,
+          theme: "purple",
+          badge: `ROUND i=${i}`,
+          badgeCls: "badge-purple",
+          msg: `Iteration <code>i = ${i}</code> (paths with at most <code>${i}</code> stops / <code>${i + 1}</code> flights): copied <code>tmpPrices = prices.copy()</code>.`,
+          vars: { i, stops: `≤ ${i}`, s: "—", d: "—", p: "—", dstVal: fmt(prices[dst]) },
+          prices: [...prices],
+          tmpPrices: [...tmpPrices],
+          flightIdx: -1,
+          edgeState: null,
+          readSrc: -1,
+          readInf: -1,
+          checkDst: -1,
+          writeDst: -1,
+          result: null
+        });
+
+        // Inner loop: for s, d, p in flights
+        for (let fIdx = 0; fIdx < flights.length; fIdx++) {
+          const [s, d, p] = flights[fIdx];
+
+          if (prices[s] === Infinity) {
+            trace.push({
+              line: 11,
+              theme: "rose",
+              badge: "SKIP INF",
+              badgeCls: "badge-rose",
+              msg: `Flight <code>${s} → ${d}</code> ($${p}): <code>prices[${s}] == inf</code>, so city <code>${s}</code> isn't reachable yet in ≤ ${i} flights. <code>continue</code>.`,
+              vars: { i, stops: `≤ ${i}`, s, d, p, dstVal: fmt(prices[dst]) },
+              prices: [...prices],
+              tmpPrices: [...tmpPrices],
+              flightIdx: fIdx,
+              edgeState: {
+                s, d, p,
+                type: "skip_inf",
+                badge: "SKIPPED (inf)",
+                formulaHtml: `<span style="color:#fda4af;">prices[${s}] == ∞ → continue (cannot depart from unreachable city ${s})</span>`
+              },
+              readSrc: -1,
+              readInf: s,
+              checkDst: -1,
+              writeDst: -1,
+              result: null
+            });
+            continue;
+          }
+
+          const cand = prices[s] + p;
+          const prevTmp = tmpPrices[d];
+          const isBetter = cand < prevTmp;
+
+          // Check condition line 12
+          trace.push({
+            line: 12,
+            theme: "amber",
+            badge: "CHECK EDGE",
+            badgeCls: "badge-amber",
+            msg: `Flight <code>${s} → ${d}</code> ($${p}): checking if <code>prices[${s}] + ${p} (${cand}) &lt; tmpPrices[${d}] (${fmt(prevTmp)})</code> → <strong>${isBetter ? "True" : "False"}</strong>.`,
+            vars: { i, stops: `≤ ${i}`, s, d, p, dstVal: fmt(prices[dst]) },
+            prices: [...prices],
+            tmpPrices: [...tmpPrices],
+            flightIdx: fIdx,
+            edgeState: {
+              s, d, p,
+              type: isBetter ? "check" : "no_improve",
+              badge: isBetter ? "IMPROVES!" : "NOT CHEAPER",
+              formulaHtml: `<span>prices[${s}] (${prices[s]}) + ${p} = <strong>${cand}</strong> ${isBetter ? "&lt;" : "&ge;"} tmpPrices[${d}] (${fmt(prevTmp)})</span>`
+            },
+            readSrc: s,
+            readInf: -1,
+            checkDst: d,
+            writeDst: -1,
+            result: null
+          });
+
+          if (isBetter) {
+            tmpPrices[d] = cand;
+            trace.push({
+              line: 13,
+              theme: "emerald",
+              badge: "RELAXED",
+              badgeCls: "badge-emerald",
+              msg: `Updated <code>tmpPrices[${d}] = ${cand}</code> (was ${fmt(prevTmp)}). Notice <code>prices[${d}]</code> stays ${fmt(prices[d])} until round <code>i=${i}</code> ends!`,
+              vars: { i, stops: `≤ ${i}`, s, d, p, dstVal: fmt(prices[dst]) },
+              prices: [...prices],
+              tmpPrices: [...tmpPrices],
+              flightIdx: fIdx,
+              edgeState: {
+                s, d, p,
+                type: "relaxed",
+                badge: `tmpPrices[${d}] = ${cand}`,
+                formulaHtml: `<span style="color:#6ee7b7; font-weight:700;">tmpPrices[${d}] updated: ${fmt(prevTmp)} → ${cand}</span>`
+              },
+              readSrc: s,
+              readInf: -1,
+              checkDst: -1,
+              writeDst: d,
+              result: null
+            });
+          }
+        }
+
+        // End of round i: prices = tmpPrices
+        prices = [...tmpPrices];
+        trace.push({
+          line: 14,
+          theme: "sky",
+          badge: "COMMIT LAYER",
+          badgeCls: "badge-sky",
+          msg: `End of round <code>i = ${i}</code>: committed <code>prices = tmpPrices</code>. All paths using up to <code>${i + 1}</code> flights are now finalized.`,
+          vars: { i, stops: `≤ ${i}`, s: "—", d: "—", p: "—", dstVal: fmt(prices[dst]) },
+          prices: [...prices],
+          tmpPrices: [...tmpPrices],
+          flightIdx: -1,
+          edgeState: null,
+          readSrc: -1,
+          readInf: -1,
+          checkDst: -1,
+          writeDst: -1,
+          result: null
+        });
+      }
+
+      // Final return line 16
+      const ans = prices[dst] === Infinity ? -1 : prices[dst];
+      trace.push({
+        line: 16,
+        theme: ans === -1 ? "rose" : "emerald",
+        badge: "RETURN",
+        badgeCls: ans === -1 ? "badge-rose" : "badge-emerald",
+        msg: ans === -1
+          ? `<code>prices[${dst}] == inf</code>: destination city <code>${dst}</code> cannot be reached within <code>k = ${k}</code> stops. Returning <code>-1</code>.`
+          : `Completed <code>k + 1 = ${k + 1}</code> rounds! Cheapest price to city <code>${dst}</code> within <code>k = ${k}</code> stops is <code>${ans}</code>.`,
+        vars: { i: "done", stops: `≤ ${k}`, s: "—", d: "—", p: "—", dstVal: fmt(prices[dst]) },
+        prices: [...prices],
+        tmpPrices: [...prices],
+        flightIdx: -1,
+        edgeState: null,
+        readSrc: -1,
+        readInf: -1,
+        checkDst: -1,
+        writeDst: dst,
+        result: ans
+      });
+
+      return trace;
+    }
+
+    // =========================================================================
+    // 4. GRAPH LAYOUT & SVG RENDERING
+    // =========================================================================
+    function computeNodePositions(n, src, dst) {
+      const pos = {};
+      if (n === 4 && src === 0 && dst === 3) {
+        // Clean diamond layout for classic 4-node graph
+        pos[0] = { x: 145, y: 170 };
+        pos[1] = { x: 340, y: 78 };
+        pos[2] = { x: 340, y: 262 };
+        pos[3] = { x: 540, y: 170 };
+        return pos;
+      }
+      const cx = 340, cy = 170;
+      const rx = n <= 4 ? 190 : 250;
+      const ry = n <= 4 ? 95 : 122;
+      for (let idx = 0; idx < n; idx++) {
+        const angle = Math.PI + (idx * 2 * Math.PI) / n;
+        pos[idx] = {
+          x: Math.round(cx + rx * Math.cos(angle)),
+          y: Math.round(cy + ry * Math.sin(angle))
+        };
+      }
+      return pos;
+    }
+
+    function renderCodeLines() {
+      const container = document.getElementById("code-body");
+      container.innerHTML = CODE_LINES.map(l => `
+        <div id="code-line-${l.num}" class="code-line">
+          <span class="line-num">${l.num}</span>
+          <span>${l.html || " "}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderGraph(step) {
+      const svg = document.getElementById("graph-svg");
+      const r = 23;
+      const { n, flights, src, dst } = state;
+
+      const edgeSet = new Set(flights.map(([u, v]) => `${u}->${v}`));
+
+      const defs = `
+        <defs>
+          <marker id="arr-def" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 z" fill="#475569" />
+          </marker>
+          <marker id="arr-amber" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="#f59e0b" />
+          </marker>
+          <marker id="arr-em" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="#10b981" />
+          </marker>
+          <marker id="arr-rose" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="#f43f5e" />
+          </marker>
+        </defs>
+      `;
+
+      let edgesSvg = "";
+      flights.forEach(([u, v, p], idx) => {
+        const p1 = nodePositions[u];
+        const p2 = nodePositions[v];
+        if (!p1 || !p2) return;
+
+        const isCurrent = step.flightIdx === idx;
+        let color = "#475569";
+        let sw = "1.8";
+        let marker = "url(#arr-def)";
+        let labelBg = "#141824";
+        let labelBorder = "#334155";
+        let labelText = "#cbd5e1";
+
+        if (isCurrent && step.edgeState) {
+          const t = step.edgeState.type;
+          if (t === "relaxed") {
+            color = "#10b981"; sw = "3.2"; marker = "url(#arr-em)";
+            labelBg = "#064e3b"; labelBorder = "#10b981"; labelText = "#d1fae5";
+          } else if (t === "check") {
+            color = "#f59e0b"; sw = "3"; marker = "url(#arr-amber)";
+            labelBg = "#451a03"; labelBorder = "#f59e0b"; labelText = "#fef3c7";
+          } else {
+            color = "#f43f5e"; sw = "2.6"; marker = "url(#arr-rose)";
+            labelBg = "#4c0519"; labelBorder = "#f43f5e"; labelText = "#ffe4e6";
+          }
+        }
+
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const ux = dx / dist;
+        const uy = dy / dist;
+        const hasReverse = edgeSet.has(`${v}->${u}`);
+
+        let lx, ly;
+        if (hasReverse) {
+          const nx = -uy, ny = ux;
+          const cx = (p1.x + p2.x) / 2 + nx * 28;
+          const cy = (p1.y + p2.y) / 2 + ny * 28;
+          const sLen = Math.hypot(cx - p1.x, cy - p1.y) || 1;
+          const eLen = Math.hypot(p2.x - cx, p2.y - cy) || 1;
+          const x1 = p1.x + ((cx - p1.x) / sLen) * (r + 1);
+          const y1 = p1.y + ((cy - p1.y) / sLen) * (r + 1);
+          const x2 = p2.x - ((p2.x - cx) / eLen) * (r + 5);
+          const y2 = p2.y - ((p2.y - cy) / eLen) * (r + 5);
+          edgesSvg += `<path d="M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}" fill="none" stroke="${color}" stroke-width="${sw}" marker-end="${marker}" />`;
+          lx = 0.25 * p1.x + 0.5 * cx + 0.25 * p2.x;
+          ly = 0.25 * p1.y + 0.5 * cy + 0.25 * p2.y;
+        } else {
+          const x1 = p1.x + ux * (r + 1);
+          const y1 = p1.y + uy * (r + 1);
+          const x2 = p2.x - ux * (r + 5);
+          const y2 = p2.y - uy * (r + 5);
+          edgesSvg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${sw}" marker-end="${marker}" />`;
+          lx = (x1 + x2) / 2;
+          ly = (y1 + y2) / 2;
+        }
+
+        const pStr = String(p);
+        const wBox = Math.max(28, pStr.length * 8 + 12);
+        edgesSvg += `
+          <g transform="translate(${lx}, ${ly})">
+            <rect x="${-wBox / 2}" y="-10" width="${wBox}" height="20" rx="5" fill="${labelBg}" stroke="${labelBorder}" stroke-width="1.2" />
+            <text x="0" y="4" text-anchor="middle" fill="${labelText}" font-size="11" font-family="ui-monospace, monospace" font-weight="700">${pStr}</text>
+          </g>
+        `;
+      });
+
+      let nodesSvg = "";
+      for (let i = 0; i < n; i++) {
+        const pos = nodePositions[i];
+        if (!pos) continue;
+
+        let fill = "#181d2a";
+        let stroke = "#475569";
+        let sw = "2.2";
+        let txt = "#f1f5f9";
+        let roleTag = "";
+        let roleColor = "";
+
+        if (i === src) {
+          fill = "#0c4a6e"; stroke = "#38bdf8"; sw = "2.8"; txt = "#e0f2fe";
+          roleTag = "SRC"; roleColor = "#38bdf8";
+        } else if (i === dst) {
+          fill = "#064e3b"; stroke = "#10b981"; sw = "2.8"; txt = "#d1fae5";
+          roleTag = "DST"; roleColor = "#10b981";
+        }
+
+        if (step.writeDst === i) {
+          stroke = "#10b981"; sw = "3.5";
+        } else if (step.checkDst === i) {
+          stroke = "#f59e0b"; sw = "3.5";
+        } else if (step.readInf === i) {
+          stroke = "#f43f5e"; sw = "3.2";
+        }
+
+        const pVal = fmt(step.prices[i]);
+        const tVal = step.tmpPrices ? fmt(step.tmpPrices[i]) : pVal;
+        const badgeText = step.tmpPrices ? `p:${pVal} | t:${tVal}` : `p:${pVal}`;
+        const badgeW = Math.max(58, badgeText.length * 6.5 + 10);
+
+        nodesSvg += `
+          <g class="graph-node" data-node="${i}" transform="translate(${pos.x}, ${pos.y})">
+            ${roleTag ? `
+              <rect x="-18" y="-37" width="36" height="14" rx="4" fill="#0d1017" stroke="${roleColor}" stroke-width="1" />
+              <text x="0" y="-27" text-anchor="middle" fill="${roleColor}" font-size="8.5" font-family="ui-monospace, monospace" font-weight="700">${roleTag}</text>
+            ` : ""}
+            <circle r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />
+            <text x="0" y="5" text-anchor="middle" fill="${txt}" font-size="15" font-family="ui-monospace, monospace" font-weight="700">${i}</text>
+            <rect x="${-badgeW / 2}" y="26" width="${badgeW}" height="16" rx="4" fill="#0d1017" stroke="#334155" stroke-width="1" />
+            <text x="0" y="37" text-anchor="middle" fill="#e2e8f0" font-size="9.5" font-family="ui-monospace, monospace" font-weight="600">${badgeText}</text>
+          </g>
+        `;
+      }
+
+      svg.innerHTML = defs + edgesSvg + nodesSvg;
+    }
+
+    // =========================================================================
+    // 5. RENDER UI FOR CURRENT STEP
+    // =========================================================================
+    function renderUI() {
+      const step = steps[currentStep];
+      if (!step) return;
+
+      const { n, flights, src, dst, k } = state;
+      document.getElementById("meta-pill").textContent = `n=${n} • src=${src} • dst=${dst} • k=${k}`;
+
+      // Playback bar
+      document.getElementById("step-cur").textContent = currentStep;
+      document.getElementById("step-max").textContent = steps.length - 1;
+      document.getElementById("btn-prev").disabled = currentStep === 0;
+      document.getElementById("btn-reset").disabled = currentStep === 0;
+      document.getElementById("btn-next").disabled = currentStep === steps.length - 1;
+      document.getElementById("btn-end").disabled = currentStep === steps.length - 1;
+
+      const badge = document.getElementById("status-badge");
+      badge.textContent = step.badge;
+      badge.className = `status-badge ${step.badgeCls}`;
+      document.getElementById("status-text").innerHTML = step.msg;
+
+      // Highlight code line
+      CODE_LINES.forEach(l => {
+        const el = document.getElementById(`code-line-${l.num}`);
+        if (!el) return;
+        el.className = "code-line";
+        if (l.num === step.line) {
+          el.classList.add(`hl-${step.theme}`);
+        }
+      });
+
+      // Local variables
+      document.getElementById("v-i").textContent = step.vars.i;
+      document.getElementById("v-stops").textContent = step.vars.stops;
+      document.getElementById("v-s").textContent = step.vars.s;
+      document.getElementById("v-d").textContent = step.vars.d;
+      document.getElementById("v-p").textContent = step.vars.p;
+      document.getElementById("v-dst").textContent = step.vars.dstVal;
+
+      // Edge relaxation card & return box
+      const edgeBadge = document.getElementById("edge-badge");
+      const calcEl = document.getElementById("calc-formula");
+      if (!step.edgeState) {
+        edgeBadge.textContent = "Idle";
+        edgeBadge.className = "pill pill-slate";
+        calcEl.innerHTML = `<span style="color:var(--text-muted);">No edge under evaluation in this step.</span>`;
+      } else {
+        edgeBadge.textContent = step.edgeState.badge;
+        const t = step.edgeState.type;
+        edgeBadge.className = `pill ${t === "relaxed" ? "badge-emerald" : t === "check" ? "badge-amber" : "badge-rose"}`;
+        calcEl.innerHTML = step.edgeState.formulaHtml;
+      }
+
+      document.getElementById("iter-pill").textContent =
+        typeof step.vars.i === "number" ? `i = ${step.vars.i} of ${k}` : `k = ${k} (${k + 1} rounds)`;
+
+      const retEl = document.getElementById("return-box");
+      if (step.result !== null) {
+        if (step.result === -1) {
+          retEl.innerHTML = `<span style="background:var(--rose-soft); border:1px solid var(--rose); color:#fda4af; padding:3px 10px; border-radius:6px; font-weight:700;">return -1 (Unreachable)</span>`;
+        } else {
+          retEl.innerHTML = `<span style="background:var(--emerald-soft); border:1px solid var(--emerald); color:#6ee7b7; padding:3px 10px; border-radius:6px; font-weight:700; font-size:13px;">return ${step.result}</span>`;
+        }
+      } else {
+        retEl.innerHTML = `<span>Pending k + 1 iterations...</span>`;
+      }
+
+      // Layer isolation arrays: prices vs tmpPrices
+      document.getElementById("stops-pill").textContent =
+        typeof step.vars.i === "number"
+          ? `Round i=${step.vars.i}: ≤ ${step.vars.i + 1} flights (≤ ${step.vars.i} stops)`
+          : `Max ${k + 1} flights (≤ ${k} stops)`;
+
+      document.getElementById("prices-cells").innerHTML = step.prices.map((val, idx) => {
+        let cls = "arr-cell";
+        let tag = idx === src ? "SRC" : (idx === dst ? "DST" : "");
+        let tagColor = idx === src ? "#38bdf8" : (idx === dst ? "#10b981" : "#64748b");
+
+        if (step.readSrc === idx) {
+          cls += " read-src";
+          tag = "READ s";
+          tagColor = "#38bdf8";
+        } else if (step.readInf === idx) {
+          cls += " read-inf";
+          tag = "INF SKIP";
+          tagColor = "#f43f5e";
+        }
+
+        return `
+          <div class="${cls}">
+            <div class="arr-idx">city ${idx}</div>
+            <div class="arr-val">${fmt(val)}</div>
+            <div class="arr-tag" style="color:${tagColor};">${tag}</div>
+          </div>
+        `;
+      }).join("");
+
+      const tmpArr = step.tmpPrices || step.prices;
+      document.getElementById("tmp-cells").innerHTML = tmpArr.map((val, idx) => {
+        let cls = "arr-cell";
+        let tag = step.tmpPrices ? "" : "(not copied)";
+        let tagColor = "#64748b";
+
+        if (step.writeDst === idx) {
+          cls += " write-dst";
+          tag = step.result !== null ? "FINAL" : "UPDATED d";
+          tagColor = "#10b981";
+        } else if (step.checkDst === idx) {
+          cls += " check-dst";
+          tag = "CHECK d";
+          tagColor = "#f59e0b";
+        }
+
+        return `
+          <div class="${cls}" style="${step.tmpPrices ? "" : "opacity:0.55;"}">
+            <div class="arr-idx">city ${idx}</div>
+            <div class="arr-val">${fmt(val)}</div>
+            <div class="arr-tag" style="color:${tagColor};">${tag}</div>
+          </div>
+        `;
+      }).join("");
+
+      // Flights ribbon
+      document.getElementById("flights-count").textContent = `${flights.length} flights`;
+      document.getElementById("flights-ribbon").innerHTML = flights.map(([s, d, p], idx) => {
+        let cls = "flight-chip";
+        if (step.flightIdx === idx && step.edgeState) {
+          if (step.edgeState.type === "relaxed") cls += " active-relaxed";
+          else if (step.edgeState.type === "check") cls += " active-eval";
+          else cls += " active-skip";
+        }
+        return `<span class="${cls}">[${s} → ${d}, $${p}]</span>`;
+      }).join("");
+
+      renderGraph(step);
+    }
+
+    // =========================================================================
+    // 6. DRAGGABLE SVG NODES
+    // =========================================================================
+    const svgEl = document.getElementById("graph-svg");
+
+    svgEl.addEventListener("pointerdown", (e) => {
+      const target = e.target.closest(".graph-node");
+      if (!target) return;
+      draggedNode = Number(target.getAttribute("data-node"));
+      svgEl.setPointerCapture(e.pointerId);
+    });
+
+    svgEl.addEventListener("pointermove", (e) => {
+      if (draggedNode === null) return;
+      const rect = svgEl.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 680;
+      const y = ((e.clientY - rect.top) / rect.height) * 340;
+      nodePositions[draggedNode] = {
+        x: Math.max(36, Math.min(644, Math.round(x))),
+        y: Math.max(42, Math.min(296, Math.round(y)))
+      };
+      renderGraph(steps[currentStep]);
+    });
+
+    svgEl.addEventListener("pointerup", (e) => {
+      if (draggedNode !== null) {
+        draggedNode = null;
+        svgEl.releasePointerCapture(e.pointerId);
+      }
+    });
+
+    // =========================================================================
+    // 7. PLAYBACK & INPUT LOADING
+    // =========================================================================
+    function stopPlay() {
+      if (playInterval) {
+        clearInterval(playInterval);
+        playInterval = null;
+      }
+      document.getElementById("btn-play").textContent = "Play";
+    }
+
+    function togglePlay() {
+      if (playInterval) {
+        stopPlay();
+        return;
+      }
+      if (currentStep >= steps.length - 1) {
+        currentStep = 0;
+        renderUI();
+      }
+      document.getElementById("btn-play").textContent = "Pause";
+      playInterval = setInterval(() => {
+        if (currentStep < steps.length - 1) {
+          currentStep++;
+          renderUI();
+        } else {
+          stopPlay();
+        }
+      }, SPEEDS[speedVal].ms);
+    }
+
+    function stepForward() {
+      stopPlay();
+      if (currentStep < steps.length - 1) {
+        currentStep++;
+        renderUI();
+      }
+    }
+
+    function stepBackward() {
+      stopPlay();
+      if (currentStep > 0) {
+        currentStep--;
+        renderUI();
+      }
+    }
+
+    function resetSteps() {
+      stopPlay();
+      currentStep = 0;
+      renderUI();
+    }
+
+    function jumpToEnd() {
+      stopPlay();
+      currentStep = Math.max(0, steps.length - 1);
+      renderUI();
+    }
+
+    function onSpeedChange(val) {
+      speedVal = Number(val);
+      document.getElementById("speed-label").textContent = SPEEDS[speedVal].label;
+      if (playInterval) {
+        stopPlay();
+        togglePlay();
+      }
+    }
+
+    function applyProblem(cfg, presetIdx = -1) {
+      stopPlay();
+      state = {
+        n: cfg.n,
+        flights: cfg.flights.map(f => [...f]),
+        src: cfg.src,
+        dst: cfg.dst,
+        k: cfg.k
+      };
+      nodePositions = computeNodePositions(state.n, state.src, state.dst);
+      steps = buildTrace(state);
+      currentStep = 0;
+
+      [0, 1, 2, 3].forEach(i => {
+        const btn = document.getElementById(`preset-btn-${i}`);
+        if (btn) btn.className = i === presetIdx ? "preset-active" : "";
+      });
+
+      document.getElementById("inp-n").value = state.n;
+      document.getElementById("inp-flights").value = JSON.stringify(state.flights);
+      document.getElementById("inp-src").value = state.src;
+      document.getElementById("inp-dst").value = state.dst;
+      document.getElementById("inp-k").value = state.k;
+      document.getElementById("custom-error").style.display = "none";
+      renderUI();
+    }
+
+    function selectPreset(idx) {
+      if (PRESETS[idx]) {
+        applyProblem(PRESETS[idx], idx);
+      }
+    }
+
+    function loadCustomInput() {
+      const errEl = document.getElementById("custom-error");
+      try {
+        const n = Number(document.getElementById("inp-n").value);
+        const src = Number(document.getElementById("inp-src").value);
+        const dst = Number(document.getElementById("inp-dst").value);
+        const k = Number(document.getElementById("inp-k").value);
+        const flights = JSON.parse(document.getElementById("inp-flights").value);
+
+        if (!Number.isInteger(n) || n < 2 || n > 12) {
+          throw new Error("n must be an integer between 2 and 12.");
+        }
+        if (!Number.isInteger(src) || src < 0 || src >= n || !Number.isInteger(dst) || dst < 0 || dst >= n) {
+          throw new Error(`src and dst must be between 0 and ${n - 1}.`);
+        }
+        if (!Number.isInteger(k) || k < 0 || k > 10) {
+          throw new Error("k must be an integer between 0 and 10.");
+        }
+        if (!Array.isArray(flights) || flights.length === 0 || flights.length > 35) {
+          throw new Error("flights must be a non-empty JSON array (max 35 edges).");
+        }
+        for (const edge of flights) {
+          if (!Array.isArray(edge) || edge.length !== 3) {
+            throw new Error("Each flight must be [from, to, price].");
+          }
+          const [u, v, p] = edge;
+          if (!Number.isInteger(u) || u < 0 || u >= n || !Number.isInteger(v) || v < 0 || v >= n || typeof p !== "number" || p < 0) {
+            throw new Error(`Invalid flight [${u}, ${v}, ${p}].`);
+          }
+        }
+
+        applyProblem({ n, flights, src, dst, k }, -1);
+      } catch (err) {
+        errEl.textContent = err.message || "Invalid JSON input.";
+        errEl.style.display = "inline";
+      }
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (document.activeElement && document.activeElement.tagName === "INPUT") return;
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        stepForward();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        stepBackward();
+      } else if (e.key === " ") {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key.toLowerCase() === "r") {
+        resetSteps();
+      }
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      renderCodeLines();
+      selectPreset(0);
+    });
+  </script>
+</body>
+</html>
