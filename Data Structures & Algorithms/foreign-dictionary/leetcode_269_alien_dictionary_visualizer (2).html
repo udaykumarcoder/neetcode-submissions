@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeetCode 269: Alien Dictionary — Topological Sort Visualizer</title>
+  <style>
+    :root {
+      --bg-app: #0f1117;
+      --bg-panel: #161922;
+      --bg-card: #1c202b;
+      --bg-inset: #12151d;
+      --border-subtle: #2a3040;
+      --border-strong: #3b4358;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --amber: #f59e0b;
+      --amber-soft: rgba(245, 158, 11, 0.16);
+      --emerald: #10b981;
+      --emerald-soft: rgba(16, 185, 129, 0.16);
+      --rose: #f43f5e;
+      --rose-soft: rgba(244, 63, 94, 0.16);
+      --sky: #38bdf8;
+      --sky-soft: rgba(56, 189, 248, 0.16);
+      --purple: #a855f7;
+      --purple-soft: rgba(168, 85, 247, 0.16);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.45;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-inset);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333b4f;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #47526d;
+    }
+
+    /* Header & Controls */
+    header {
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 18px;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .container {
+      max-width: 1620px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .header-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--purple), var(--amber));
+      color: #090d16;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+    }
+
+    .pill-purple {
+      background: var(--purple-soft);
+      color: #d8b4fe;
+      border-color: rgba(168, 85, 247, 0.35);
+    }
+
+    .pill-slate {
+      background: #232836;
+      color: var(--text-secondary);
+      border-color: var(--border-subtle);
+    }
+
+    .presets-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background-color: var(--bg-card);
+      color: var(--text-primary);
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background-color 0.15s, border-color 0.15s, transform 0.08s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: #252b3b;
+      border-color: var(--border-strong);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    button.preset-active {
+      background-color: var(--amber-soft);
+      border-color: rgba(245, 158, 11, 0.55);
+      color: #fcd34d;
+      font-weight: 600;
+    }
+
+    button.btn-primary {
+      background-color: var(--amber);
+      border-color: var(--amber);
+      color: #0f1117;
+      font-weight: 700;
+    }
+
+    button.btn-primary:hover:not(:disabled) {
+      background-color: #fbbf24;
+      border-color: #fbbf24;
+    }
+
+    /* Custom Words Input Row */
+    .custom-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .custom-input {
+      flex: 1;
+      min-width: 240px;
+      background-color: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    .custom-input:focus {
+      border-color: var(--amber);
+    }
+
+    .error-msg {
+      color: #fda4af;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      display: none;
+    }
+
+    /* Playback Subheader */
+    .playback-bar {
+      background-color: #13161f;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 10px 18px;
+    }
+
+    .playback-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .controls-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .step-counter {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      padding: 5px 10px;
+      border-radius: 8px;
+      color: var(--text-secondary);
+    }
+
+    .step-counter strong {
+      color: var(--amber);
+    }
+
+    .speed-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    .speed-box input[type="range"] {
+      width: 75px;
+      accent-color: var(--amber);
+      cursor: pointer;
+    }
+
+    .status-banner {
+      flex: 1;
+      min-width: 280px;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 7px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 38px;
+    }
+
+    .status-badge {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .badge-sky { background: var(--sky-soft); color: #7dd3fc; border-color: rgba(56, 189, 248, 0.35); }
+    .badge-amber { background: var(--amber-soft); color: #fcd34d; border-color: rgba(245, 158, 11, 0.35); }
+    .badge-emerald { background: var(--emerald-soft); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); }
+    .badge-purple { background: var(--purple-soft); color: #d8b4fe; border-color: rgba(168, 85, 247, 0.35); }
+    .badge-rose { background: var(--rose-soft); color: #fda4af; border-color: rgba(244, 63, 94, 0.4); }
+    .badge-slate { background: #262c3a; color: #cbd5e1; border-color: #3b4358; }
+
+    .status-text {
+      font-size: 12.5px;
+      color: var(--text-primary);
+    }
+
+    .status-text code {
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-size: 11.5px;
+    }
+
+    /* Main 2-Column Workspace */
+    main {
+      flex: 1;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    @media (max-width: 1080px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .col-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      min-width: 0;
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Phase 1 Word Comparison */
+    .words-ribbon {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .word-chip {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .word-chip.w1-active {
+      background: var(--amber-soft);
+      border-color: var(--amber);
+      color: #fde68a;
+      font-weight: 700;
+    }
+
+    .word-chip.w2-active {
+      background: var(--purple-soft);
+      border-color: var(--purple);
+      color: #e9d5ff;
+      font-weight: 700;
+    }
+
+    .pair-box {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: auto;
+    }
+
+    .char-grid {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .row-labels {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding-top: 16px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .char-cols {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .char-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ptr-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      height: 14px;
+    }
+
+    .char-cell {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid #333b4f;
+      background: #1a1e29;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+    }
+
+    .char-cell.match {
+      background: rgba(16, 185, 129, 0.14);
+      border-color: rgba(16, 185, 129, 0.45);
+      color: #6ee7b7;
+    }
+
+    .char-cell.mismatch-1 {
+      background: var(--amber-soft);
+      border-color: var(--amber);
+      color: #fde68a;
+      font-weight: 700;
+    }
+
+    .char-cell.mismatch-2 {
+      background: var(--sky-soft);
+      border-color: var(--sky);
+      color: #bae6fd;
+      font-weight: 700;
+    }
+
+    .char-cell.prefix-err {
+      background: var(--rose-soft);
+      border-color: var(--rose);
+      color: #fecdd3;
+      font-weight: 700;
+    }
+
+    .pair-log-header {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin: 10px 0 5px;
+    }
+
+    .pair-log {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 6px;
+      max-height: 112px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .pair-log-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.02);
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .pair-log-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--border-subtle);
+    }
+
+    .pair-log-item.active-log {
+      background: rgba(56, 189, 248, 0.1);
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    /* Phase 2 SVG Graph */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 1.5px solid transparent;
+    }
+
+    .svg-wrap {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    svg#graph-svg {
+      width: 100%;
+      height: 330px;
+      display: block;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .graph-node {
+      cursor: grab;
+    }
+    .graph-node:active {
+      cursor: grabbing;
+    }
+
+    .output-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 640px) {
+      .output-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sub-box {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .sub-box-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+
+    .res-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      min-height: 24px;
+      align-items: center;
+    }
+
+    .res-chip {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 5px;
+      background: #1e2330;
+      border: 1px solid #333b4f;
+      color: var(--text-primary);
+    }
+
+    .res-chip.latest {
+      background: var(--emerald-soft);
+      border-color: var(--emerald);
+      color: #6ee7b7;
+      font-weight: 700;
+    }
+
+    /* Data Structures Grid */
+    .ds-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 760px) {
+      .ds-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ds-list {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 8px;
+      min-height: 115px;
+      max-height: 210px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .ds-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 7px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .ds-row.highlight {
+      background: var(--amber-soft);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+    }
+
+    .visit-chips {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 8px;
+      min-height: 115px;
+      max-height: 210px;
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .visit-chip {
+      padding: 3px 7px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-weight: 600;
+    }
+
+    .visit-true {
+      background: var(--amber-soft);
+      border-color: var(--amber);
+      color: #fcd34d;
+    }
+
+    .visit-false {
+      background: var(--emerald-soft);
+      border-color: var(--emerald);
+      color: #6ee7b7;
+    }
+
+    /* Right Column: Local Variables + Python Code */
+    .vars-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      font-family: var(--font-mono);
+      text-align: center;
+    }
+
+    @media (max-width: 540px) {
+      .vars-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .var-box {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 6px 4px;
+    }
+
+    .var-name {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .var-val {
+      font-size: 12.5px;
+      font-weight: 700;
+      margin-top: 2px;
+      color: var(--text-primary);
+    }
+
+    .code-card {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .code-header {
+      background: #1d222f;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .window-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .code-body {
+      padding: 8px 0;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.55;
+      max-height: 620px;
+      overflow: auto;
+    }
+
+    .code-line {
+      display: flex;
+      padding: 1px 12px;
+      border-left: 3px solid transparent;
+      white-space: pre;
+    }
+
+    .code-line.hl-amber {
+      background: rgba(245, 158, 11, 0.16);
+      border-left-color: var(--amber);
+    }
+
+    .code-line.hl-emerald {
+      background: rgba(16, 185, 129, 0.16);
+      border-left-color: var(--emerald);
+    }
+
+    .code-line.hl-rose {
+      background: rgba(244, 63, 94, 0.18);
+      border-left-color: var(--rose);
+    }
+
+    .line-num {
+      width: 28px;
+      color: var(--text-muted);
+      user-select: none;
+      text-align: right;
+      padding-right: 12px;
+      flex-shrink: 0;
+    }
+
+    /* Syntax Highlighting Colors */
+    .kw { color: #c084fc; }
+    .fn { color: #fde68a; }
+    .tp { color: #6ee7b7; }
+    .st { color: #fcd34d; }
+    .num { color: #7dd3fc; }
+    .cm { color: #64748b; font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-badge">269</div>
+          <div>
+            <div class="brand-title">
+              <span>LeetCode 269: Alien Dictionary</span>
+              <span class="pill pill-purple">Topological Sort • 3-State DFS</span>
+              <span id="stats-pill" class="pill pill-slate">21 words • 11 chars</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="presets-bar">
+          <span style="font-size:11px; color:var(--text-secondary); margin-right:2px;">Presets:</span>
+          <button id="preset-btn-0" class="preset-active" onclick="selectPreset(0)">1. Large a–k (21 words)</button>
+          <button id="preset-btn-1" onclick="selectPreset(1)">2. Classic ("wertf")</button>
+          <button id="preset-btn-2" onclick="selectPreset(2)">3. Cycle ("")</button>
+          <button id="preset-btn-3" onclick="selectPreset(3)">4. Prefix Trap ("")</button>
+        </div>
+      </div>
+
+      <div class="custom-bar">
+        <span style="font-size:11.5px; color:var(--text-secondary); font-weight:600;">Custom Words:</span>
+        <input id="custom-words-input" class="custom-input" type="text"
+          placeholder='e.g. "wrt","wrf","er","ett","rftt" or wrt, wrf, er, ett, rftt' />
+        <button class="btn-primary" onclick="loadCustomWords()">Load Words</button>
+        <span id="custom-error" class="error-msg"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Playback Controls & Status Banner -->
+  <section class="playback-bar">
+    <div class="container playback-inner">
+      <div class="controls-group">
+        <button id="btn-reset" title="Reset to Step 0 (R)" onclick="resetSteps()">|&lt;&lt;</button>
+        <button id="btn-prev" title="Step Backward (Left Arrow)" onclick="stepBackward()">&lt; Prev</button>
+        <button id="btn-play" class="btn-primary" title="Play / Pause (Space)" onclick="togglePlay()">Play</button>
+        <button id="btn-next" title="Step Forward (Right Arrow)" onclick="stepForward()">Next &gt;</button>
+        <button id="btn-end" title="Jump to Final Result" onclick="jumpToEnd()">&gt;&gt;|</button>
+
+        <div class="step-counter">
+          Step <strong id="step-cur">0</strong> / <span id="step-max">0</span>
+        </div>
+
+        <div class="speed-box">
+          <span>Speed</span>
+          <input id="speed-slider" type="range" min="1" max="5" value="3" oninput="onSpeedChange(this.value)" />
+          <span id="speed-label" style="font-family:var(--font-mono); color:var(--text-primary); min-width:30px;">1.0x</span>
+        </div>
+      </div>
+
+      <div class="status-banner">
+        <span id="status-badge" class="status-badge badge-sky">INIT ADJ</span>
+        <div id="status-text" class="status-text">Initializing adjacency sets...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Workspace -->
+  <main class="container">
+    <!-- Left Column -->
+    <div class="col-stack">
+
+      <!-- Phase 1: Pairwise Word Comparison -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="status-badge badge-sky">Phase 1</span>
+            <span>Adjacent Word Comparison (<code style="font-family:var(--font-mono); color:#fcd34d;">w1</code> vs <code style="font-family:var(--font-mono); color:#d8b4fe;">w2</code>)</span>
+          </div>
+          <span id="pair-pill" class="pill pill-slate">Ready</span>
+        </div>
+
+        <div id="words-ribbon" class="words-ribbon"></div>
+
+        <div id="pair-box" class="pair-box">
+          <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-muted);">Step forward to compare adjacent words...</span>
+        </div>
+
+        <div class="pair-log-header">
+          <span>Pairwise Comparison Log (click any row to jump)</span>
+          <span id="pair-log-count">0 / 0 pairs</span>
+        </div>
+        <div id="pair-log" class="pair-log"></div>
+      </div>
+
+      <!-- Phase 2: Directed Dependency Graph -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="status-badge badge-purple">Phase 2</span>
+            <span>Directed Precedence Graph</span>
+            <span style="font-size:11px; color:var(--text-muted); font-weight:400;">• Drag nodes to rearrange</span>
+          </div>
+
+          <div class="legend">
+            <span class="legend-item"><span class="dot" style="background:#1e2330; border-color:#475569;"></span>Unvisited</span>
+            <span class="legend-item"><span class="dot" style="background:rgba(245,158,11,0.35); border-color:#f59e0b;"></span>Path (True)</span>
+            <span class="legend-item"><span class="dot" style="background:rgba(16,185,129,0.35); border-color:#10b981;"></span>Visited (False)</span>
+            <span class="legend-item"><span class="dot" style="background:rgba(244,63,94,0.4); border-color:#f43f5e;"></span>Cycle</span>
+          </div>
+        </div>
+
+        <div class="svg-wrap">
+          <svg id="graph-svg" viewBox="0 0 680 340"></svg>
+        </div>
+
+        <div class="output-grid">
+          <div class="sub-box">
+            <div class="sub-box-head">
+              <span style="color:#6ee7b7; font-weight:700;">res (Post-Order Append)</span>
+              <span id="res-count" style="color:var(--text-muted);">0 / 0</span>
+            </div>
+            <div id="res-chips" class="res-chips"></div>
+          </div>
+
+          <div class="sub-box">
+            <div class="sub-box-head">
+              <span style="color:#fcd34d; font-weight:700;">Output: "".join(res)</span>
+              <span style="color:var(--text-muted);">After res.reverse()</span>
+            </div>
+            <div id="final-output" style="font-family:var(--font-mono); font-size:12px; color:var(--text-muted); min-height:24px; display:flex; align-items:center;">
+              Pending DFS completion...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Data Structures -->
+      <div class="ds-grid">
+        <div class="card" style="padding:12px;">
+          <div class="card-header" style="margin-bottom:7px;">
+            <span class="card-title" style="font-family:var(--font-mono); font-size:12px;">adj[c]</span>
+            <span id="adj-meta" style="font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted);">c → set()</span>
+          </div>
+          <div id="adj-list" class="ds-list"></div>
+        </div>
+
+        <div class="card" style="padding:12px;">
+          <div class="card-header" style="margin-bottom:7px;">
+            <span class="card-title" style="font-family:var(--font-mono); font-size:12px;">visit = {}</span>
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted);">True=Path, False=Done</span>
+          </div>
+          <div id="visit-list" class="visit-chips"></div>
+        </div>
+
+        <div class="card" style="padding:12px;">
+          <div class="card-header" style="margin-bottom:7px;">
+            <span class="card-title" style="font-family:var(--font-mono); font-size:12px;">dfs(c) Stack</span>
+            <span id="stack-depth" style="font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted);">depth = 0</span>
+          </div>
+          <div id="stack-list" class="ds-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-stack">
+      <!-- Local Variables -->
+      <div class="card" style="padding:12px 14px;">
+        <div class="card-header" style="margin-bottom:8px;">
+          <span class="card-title" style="font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-secondary);">Local Variables</span>
+          <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);">Python 3 Frame</span>
+        </div>
+        <div class="vars-grid">
+          <div class="var-box"><div class="var-name">i</div><div id="v-i" class="var-val" style="color:#7dd3fc;">—</div></div>
+          <div class="var-box"><div class="var-name">j</div><div id="v-j" class="var-val" style="color:#bae6fd;">—</div></div>
+          <div class="var-box"><div class="var-name">w1[j]</div><div id="v-w1j" class="var-val" style="color:#fcd34d;">—</div></div>
+          <div class="var-box"><div class="var-name">w2[j]</div><div id="v-w2j" class="var-val" style="color:#d8b4fe;">—</div></div>
+          <div class="var-box"><div class="var-name">c</div><div id="v-c" class="var-val" style="color:#fbbf24;">—</div></div>
+          <div class="var-box"><div class="var-name">nei</div><div id="v-nei" class="var-val" style="color:#c084fc;">—</div></div>
+          <div class="var-box"><div class="var-name">visit[c]</div><div id="v-vc" class="var-val" style="color:#6ee7b7;">—</div></div>
+        </div>
+      </div>
+
+      <!-- Synchronized Python Code Panel -->
+      <div class="card code-card">
+        <div class="code-header">
+          <div class="window-dots">
+            <span style="background:#ef4444;"></span>
+            <span style="background:#f59e0b;"></span>
+            <span style="background:#10b981;"></span>
+            <span style="margin-left:6px; color:var(--text-primary); font-weight:600;">solution.py</span>
+          </div>
+          <span>34 Lines • Post-Order DFS</span>
+        </div>
+        <div id="code-body" class="code-body"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // =========================================================================
+    // 1. EXACT 34-LINE PYTHON SOLUTION
+    // =========================================================================
+    const CODE_LINES = [
+      { num: 1,  html: '<span class="kw">class</span> <span class="tp">Solution</span>:' },
+      { num: 2,  html: '    <span class="kw">def</span> <span class="fn">alienOrder</span>(self, words: List[<span class="tp">str</span>]) -&gt; <span class="tp">str</span>:' },
+      { num: 3,  html: '        adj = { c:<span class="fn">set</span>() <span class="kw">for</span> w <span class="kw">in</span> words <span class="kw">for</span> c <span class="kw">in</span> w }' },
+      { num: 4,  html: '' },
+      { num: 5,  html: '        <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(words) - <span class="num">1</span>):' },
+      { num: 6,  html: '            w1, w2 = words[i], words[i + <span class="num">1</span>]' },
+      { num: 7,  html: '            minLen = <span class="fn">min</span>(<span class="fn">len</span>(w1), <span class="fn">len</span>(w2))' },
+      { num: 8,  html: '            <span class="kw">if</span> <span class="fn">len</span>(w1) &gt; <span class="fn">len</span>(w2) <span class="kw">and</span> w1[:minLen] == w2[:minLen]:' },
+      { num: 9,  html: '                <span class="kw">return</span> <span class="st">""</span>' },
+      { num: 10, html: '            <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(minLen):' },
+      { num: 11, html: '                <span class="kw">if</span> w1[j] != w2[j]:' },
+      { num: 12, html: '                    adj[w1[j]].add(w2[j])' },
+      { num: 13, html: '                    <span class="kw">break</span>' },
+      { num: 14, html: '' },
+      { num: 15, html: '        visit = {} <span class="cm"># False=visited, True=current path</span>' },
+      { num: 16, html: '        res = []' },
+      { num: 17, html: '' },
+      { num: 18, html: '        <span class="kw">def</span> <span class="fn">dfs</span>(c):' },
+      { num: 19, html: '            <span class="kw">if</span> c <span class="kw">in</span> visit:' },
+      { num: 20, html: '                <span class="kw">return</span> visit[c]' },
+      { num: 21, html: '' },
+      { num: 22, html: '            visit[c] = <span class="kw">True</span>' },
+      { num: 23, html: '            <span class="kw">for</span> nei <span class="kw">in</span> adj[c]:' },
+      { num: 24, html: '                <span class="kw">if</span> dfs(nei):' },
+      { num: 25, html: '                    <span class="kw">return</span> <span class="kw">True</span>' },
+      { num: 26, html: '            visit[c] = <span class="kw">False</span>' },
+      { num: 27, html: '            res.append(c)' },
+      { num: 28, html: '' },
+      { num: 29, html: '        <span class="kw">for</span> c <span class="kw">in</span> adj:' },
+      { num: 30, html: '            <span class="kw">if</span> dfs(c):' },
+      { num: 31, html: '                <span class="kw">return</span> <span class="st">""</span>' },
+      { num: 32, html: '        res.reverse()' },
+      { num: 33, html: '        <span class="kw">return</span> <span class="st">""</span>.join(res)' },
+      { num: 34, html: '        <span class="cm"># End of alienOrder</span>' }
+    ];
+
+    // =========================================================================
+    // 2. PRESETS & STATE
+    // =========================================================================
+    const PRESETS = [
+      [
+        "abcdefgh", "bdefghij", "cghij", "dfghij", "efghij", "fghij",
+        "ghij", "hij", "ij", "j", "abcdefghi", "bdefghijk", "cghijk",
+        "dfghijk", "efghijk", "fghijk", "ghijk", "hijk", "ijk", "jk", "k"
+      ],
+      ["wrt", "wrf", "er", "ett", "rftt"],
+      ["ca", "ab", "bc"],
+      ["abc", "ab"]
+    ];
+
+    const SPEEDS = {
+      1: { label: "0.5x", ms: 1400 },
+      2: { label: "0.75x", ms: 900 },
+      3: { label: "1.0x", ms: 550 },
+      4: { label: "2.0x", ms: 260 },
+      5: { label: "4.0x", ms: 110 }
+    };
+
+    let currentWords = [];
+    let steps = [];
+    let currentStep = 0;
+    let nodePositions = {};
+    let playInterval = null;
+    let speedVal = 3;
+    let draggedNode = null;
+
+    // =========================================================================
+    // 3. PRECOMPUTE IMMUTABLE EXECUTION TRACE
+    // =========================================================================
+    function buildExecutionTrace(words) {
+      const trace = [];
+      const adj = {};
+      for (const w of words) {
+        for (const c of w) {
+          if (!adj[c]) adj[c] = [];
+        }
+      }
+
+      const cloneAdj = () => {
+        const out = {};
+        for (const k of Object.keys(adj)) out[k] = [...adj[k]];
+        return out;
+      };
+
+      const makeVars = (ov = {}) => ({
+        i: "—", j: "—", w1j: "—", w2j: "—", c: "—", nei: "—", vc: "—", ...ov
+      });
+
+      const pairLog = [];
+      const cloneLog = () => pairLog.map(item => ({ ...item }));
+
+      // Step 0: Initialize adj
+      trace.push({
+        line: 3,
+        theme: "amber",
+        badge: "INIT ADJ",
+        badgeCls: "badge-sky",
+        msg: `Collected <code>${Object.keys(adj).length}</code> unique characters from <code>${words.length}</code> words into <code>adj</code>.`,
+        vars: makeVars(),
+        adj: cloneAdj(),
+        pair: null,
+        pairLog: cloneLog(),
+        visit: {},
+        res: [],
+        stack: [],
+        activeChar: null,
+        neighborChar: null,
+        activeEdge: null,
+        cycleEdge: null,
+        newEdge: null,
+        output: { status: "pending", text: "Pending DFS completion..." }
+      });
+
+      // Phase 1: Adjacent word comparisons
+      for (let i = 0; i < words.length - 1; i++) {
+        const w1 = words[i];
+        const w2 = words[i + 1];
+        const minLen = Math.min(w1.length, w2.length);
+
+        trace.push({
+          line: 6,
+          theme: "amber",
+          badge: "WORD PAIR",
+          badgeCls: "badge-sky",
+          msg: `Comparing pair <code>i=${i}</code>: <code>w1="${w1}"</code> and <code>w2="${w2}"</code> (<code>minLen=${minLen}</code>).`,
+          vars: makeVars({ i }),
+          adj: cloneAdj(),
+          pair: { i, w1, w2, j: null, status: "start" },
+          pairLog: cloneLog(),
+          visit: {},
+          res: [],
+          stack: [],
+          activeChar: null,
+          neighborChar: null,
+          activeEdge: null,
+          cycleEdge: null,
+          newEdge: null,
+          output: { status: "pending", text: "Pending DFS completion..." }
+        });
+
+        // Prefix trap check
+        if (w1.length > w2.length && w1.slice(0, minLen) === w2.slice(0, minLen)) {
+          const stepIdx = trace.length;
+          pairLog.push({ i, w1, w2, summary: `Prefix error ("${w1}" > "${w2}") → ""`, type: "error", stepIdx });
+          trace.push({
+            line: 9,
+            theme: "rose",
+            badge: "PREFIX TRAP",
+            badgeCls: "badge-rose",
+            msg: `Invalid order: <code>"${w1}"</code> is longer than its prefix <code>"${w2}"</code>. Returning <code>""</code>.`,
+            vars: makeVars({ i }),
+            adj: cloneAdj(),
+            pair: { i, w1, w2, j: null, status: "prefix_error" },
+            pairLog: cloneLog(),
+            visit: {},
+            res: [],
+            stack: [],
+            activeChar: null,
+            neighborChar: null,
+            activeEdge: null,
+            cycleEdge: null,
+            newEdge: null,
+            output: { status: "invalid", text: '"" (Invalid prefix ordering)' }
+          });
+          return trace;
+        }
+
+        let foundDiff = false;
+        for (let j = 0; j < minLen; j++) {
+          const c1 = w1[j];
+          const c2 = w2[j];
+
+          if (c1 === c2) {
+            trace.push({
+              line: 11,
+              theme: "amber",
+              badge: "CHAR MATCH",
+              badgeCls: "badge-slate",
+              msg: `<code>j=${j}</code>: <code>w1[${j}] == w2[${j}] == '${c1}'</code>. Characters match, moving on.`,
+              vars: makeVars({ i, j, w1j: `'${c1}'`, w2j: `'${c2}'` }),
+              adj: cloneAdj(),
+              pair: { i, w1, w2, j, status: "match" },
+              pairLog: cloneLog(),
+              visit: {},
+              res: [],
+              stack: [],
+              activeChar: null,
+              neighborChar: null,
+              activeEdge: null,
+              cycleEdge: null,
+              newEdge: null,
+              output: { status: "pending", text: "Pending DFS completion..." }
+            });
+          } else {
+            const exists = adj[c1].includes(c2);
+            if (!exists) adj[c1].push(c2);
+            foundDiff = true;
+            const stepIdx = trace.length;
+            pairLog.push({
+              i,
+              w1,
+              w2,
+              summary: `j=${j}: '${c1}' → '${c2}'${exists ? " (exists)" : ""}`,
+              type: "edge",
+              stepIdx
+            });
+
+            trace.push({
+              line: 12,
+              theme: "emerald",
+              badge: "EDGE ADDED",
+              badgeCls: "badge-emerald",
+              msg: `First mismatch at <code>j=${j}</code>: <code>'${c1}' != '${c2}'</code>. Added edge <code>'${c1}' → '${c2}'</code> and broke loop.`,
+              vars: makeVars({ i, j, w1j: `'${c1}'`, w2j: `'${c2}'` }),
+              adj: cloneAdj(),
+              pair: { i, w1, w2, j, status: "mismatch" },
+              pairLog: cloneLog(),
+              visit: {},
+              res: [],
+              stack: [],
+              activeChar: c1,
+              neighborChar: c2,
+              activeEdge: null,
+              cycleEdge: null,
+              newEdge: { from: c1, to: c2 },
+              output: { status: "pending", text: "Pending DFS completion..." }
+            });
+            break;
+          }
+        }
+
+        if (!foundDiff) {
+          const stepIdx = trace.length;
+          pairLog.push({ i, w1, w2, summary: `No diff in ${minLen} chars`, type: "neutral", stepIdx });
+          trace.push({
+            line: 10,
+            theme: "amber",
+            badge: "NO DIFF",
+            badgeCls: "badge-slate",
+            msg: `All <code>${minLen}</code> overlapping characters matched; no new edge learned from this pair.`,
+            vars: makeVars({ i }),
+            adj: cloneAdj(),
+            pair: { i, w1, w2, j: null, status: "done" },
+            pairLog: cloneLog(),
+            visit: {},
+            res: [],
+            stack: [],
+            activeChar: null,
+            neighborChar: null,
+            activeEdge: null,
+            cycleEdge: null,
+            newEdge: null,
+            output: { status: "pending", text: "Pending DFS completion..." }
+          });
+        }
+      }
+
+      // Phase 2: 3-State DFS Topological Sort
+      const visit = {};
+      const res = [];
+      const stack = [];
+      let hasCycle = false;
+      let cycleEdge = null;
+
+      trace.push({
+        line: 16,
+        theme: "amber",
+        badge: "INIT DFS",
+        badgeCls: "badge-purple",
+        msg: `Initialized <code>visit = {}</code> and post-order result list <code>res = []</code>.`,
+        vars: makeVars(),
+        adj: cloneAdj(),
+        pair: null,
+        pairLog: cloneLog(),
+        visit: { ...visit },
+        res: [...res],
+        stack: [...stack],
+        activeChar: null,
+        neighborChar: null,
+        activeEdge: null,
+        cycleEdge: null,
+        newEdge: null,
+        output: { status: "pending", text: "Running 3-state DFS..." }
+      });
+
+      function dfs(c, parent) {
+        if (Object.prototype.hasOwnProperty.call(visit, c)) {
+          if (visit[c] === true) {
+            cycleEdge = parent ? { from: parent, to: c } : null;
+            trace.push({
+              line: 20,
+              theme: "rose",
+              badge: "CYCLE FOUND",
+              badgeCls: "badge-rose",
+              msg: `<code>'${c}' in visit</code> and <code>visit['${c}'] == True</code>! Back-edge detected — returning <code>True</code>.`,
+              vars: makeVars({ c: `'${c}'`, vc: "True" }),
+              adj: cloneAdj(),
+              pair: null,
+              pairLog: cloneLog(),
+              visit: { ...visit },
+              res: [...res],
+              stack: [...stack],
+              activeChar: c,
+              neighborChar: null,
+              activeEdge: null,
+              cycleEdge,
+              newEdge: null,
+              output: { status: "pending", text: "Cycle detected! Unwinding..." }
+            });
+            return true;
+          } else {
+            trace.push({
+              line: 20,
+              theme: "emerald",
+              badge: "VISITED SAFE",
+              badgeCls: "badge-emerald",
+              msg: `<code>'${c}' in visit</code> and <code>visit['${c}'] == False</code> (already verified safe). Returning <code>False</code>.`,
+              vars: makeVars({ c: `'${c}'`, vc: "False" }),
+              adj: cloneAdj(),
+              pair: null,
+              pairLog: cloneLog(),
+              visit: { ...visit },
+              res: [...res],
+              stack: [...stack],
+              activeChar: c,
+              neighborChar: null,
+              activeEdge: null,
+              cycleEdge: null,
+              newEdge: null,
+              output: { status: "pending", text: "Running 3-state DFS..." }
+            });
+            return false;
+          }
+        }
+
+        visit[c] = true;
+        stack.push(c);
+
+        trace.push({
+          line: 22,
+          theme: "amber",
+          badge: "VISIT PATH",
+          badgeCls: "badge-amber",
+          msg: `Marked <code>visit['${c}'] = True</code> (active recursion path). Exploring neighbors of <code>'${c}'</code>.`,
+          vars: makeVars({ c: `'${c}'`, vc: "True" }),
+          adj: cloneAdj(),
+          pair: null,
+          pairLog: cloneLog(),
+          visit: { ...visit },
+          res: [...res],
+          stack: [...stack],
+          activeChar: c,
+          neighborChar: null,
+          activeEdge: null,
+          cycleEdge: null,
+          newEdge: null,
+          output: { status: "pending", text: "Running 3-state DFS..." }
+        });
+
+        for (const nei of adj[c]) {
+          trace.push({
+            line: 24,
+            theme: "amber",
+            badge: "EXPLORE NEI",
+            badgeCls: "badge-purple",
+            msg: `Traversing edge <code>'${c}' → '${nei}'</code> via <code>dfs('${nei}')</code>.`,
+            vars: makeVars({ c: `'${c}'`, nei: `'${nei}'`, vc: "True" }),
+            adj: cloneAdj(),
+            pair: null,
+            pairLog: cloneLog(),
+            visit: { ...visit },
+            res: [...res],
+            stack: [...stack],
+            activeChar: c,
+            neighborChar: nei,
+            activeEdge: { from: c, to: nei },
+            cycleEdge: null,
+            newEdge: null,
+            output: { status: "pending", text: "Running 3-state DFS..." }
+          });
+
+          if (dfs(nei, c)) {
+            trace.push({
+              line: 25,
+              theme: "rose",
+              badge: "PROPAGATE",
+              badgeCls: "badge-rose",
+              msg: `<code>dfs('${nei}')</code> returned <code>True</code>. Propagating cycle signal upward from <code>'${c}'</code>.`,
+              vars: makeVars({ c: `'${c}'`, nei: `'${nei}'`, vc: "True" }),
+              adj: cloneAdj(),
+              pair: null,
+              pairLog: cloneLog(),
+              visit: { ...visit },
+              res: [...res],
+              stack: [...stack],
+              activeChar: c,
+              neighborChar: nei,
+              activeEdge: null,
+              cycleEdge,
+              newEdge: null,
+              output: { status: "pending", text: "Cycle detected! Unwinding..." }
+            });
+            stack.pop();
+            return true;
+          }
+        }
+
+        visit[c] = false;
+        res.push(c);
+        stack.pop();
+
+        trace.push({
+          line: 27,
+          theme: "emerald",
+          badge: "POST-ORDER",
+          badgeCls: "badge-emerald",
+          msg: `Finished all neighbors of <code>'${c}'</code>. Set <code>visit['${c}'] = False</code> and appended <code>'${c}'</code> to <code>res</code>.`,
+          vars: makeVars({ c: `'${c}'`, vc: "False" }),
+          adj: cloneAdj(),
+          pair: null,
+          pairLog: cloneLog(),
+          visit: { ...visit },
+          res: [...res],
+          stack: [...stack],
+          activeChar: c,
+          neighborChar: null,
+          activeEdge: null,
+          cycleEdge: null,
+          newEdge: null,
+          output: { status: "pending", text: "Running 3-state DFS..." }
+        });
+
+        return false;
+      }
+
+      for (const c of Object.keys(adj)) {
+        trace.push({
+          line: 30,
+          theme: "amber",
+          badge: "OUTER LOOP",
+          badgeCls: "badge-sky",
+          msg: `Outer loop calling <code>dfs('${c}')</code>.`,
+          vars: makeVars({
+            c: `'${c}'`,
+            vc: Object.prototype.hasOwnProperty.call(visit, c) ? (visit[c] ? "True" : "False") : "—"
+          }),
+          adj: cloneAdj(),
+          pair: null,
+          pairLog: cloneLog(),
+          visit: { ...visit },
+          res: [...res],
+          stack: [...stack],
+          activeChar: c,
+          neighborChar: null,
+          activeEdge: null,
+          cycleEdge: null,
+          newEdge: null,
+          output: { status: "pending", text: "Running 3-state DFS..." }
+        });
+
+        if (dfs(c, null)) {
+          hasCycle = true;
+          trace.push({
+            line: 31,
+            theme: "rose",
+            badge: "RETURN \"\"",
+            badgeCls: "badge-rose",
+            msg: `Cycle confirmed in graph! Returning <code>""</code>.`,
+            vars: makeVars({ c: `'${c}'`, vc: "True" }),
+            adj: cloneAdj(),
+            pair: null,
+            pairLog: cloneLog(),
+            visit: { ...visit },
+            res: [...res],
+            stack: [],
+            activeChar: null,
+            neighborChar: null,
+            activeEdge: null,
+            cycleEdge,
+            newEdge: null,
+            output: { status: "invalid", text: '"" (Cycle detected)' }
+          });
+          break;
+        }
+      }
+
+      if (!hasCycle) {
+        const ans = [...res].reverse().join("");
+        trace.push({
+          line: 33,
+          theme: "emerald",
+          badge: "DONE",
+          badgeCls: "badge-emerald",
+          msg: `Reversed post-order list <code>res</code> and joined into final alien alphabet: <code>"${ans}"</code>.`,
+          vars: makeVars(),
+          adj: cloneAdj(),
+          pair: null,
+          pairLog: cloneLog(),
+          visit: { ...visit },
+          res: [...res],
+          stack: [],
+          activeChar: null,
+          neighborChar: null,
+          activeEdge: null,
+          cycleEdge: null,
+          newEdge: null,
+          output: { status: "valid", text: `"${ans}"` }
+        });
+      }
+
+      return trace;
+    }
+
+    // =========================================================================
+    // 4. GRAPH LAYOUT & SVG RENDERING
+    // =========================================================================
+    function computeNodePositions(words) {
+      const chars = [];
+      const seen = new Set();
+      for (const w of words) {
+        for (const c of w) {
+          if (!seen.has(c)) {
+            seen.add(c);
+            chars.push(c);
+          }
+        }
+      }
+      const n = chars.length;
+      const cx = 340, cy = 170;
+      const rx = n <= 4 ? 180 : (n <= 9 ? 240 : 275);
+      const ry = n <= 4 ? 85 : (n <= 9 ? 115 : 132);
+      const pos = {};
+      chars.forEach((c, idx) => {
+        const angle = -Math.PI / 2 + (idx * 2 * Math.PI) / Math.max(1, n);
+        pos[c] = {
+          x: Math.round(cx + rx * Math.cos(angle)),
+          y: Math.round(cy + ry * Math.sin(angle))
+        };
+      });
+      return pos;
+    }
+
+    function renderCodeLines() {
+      const container = document.getElementById("code-body");
+      container.innerHTML = CODE_LINES.map(l => `
+        <div id="code-line-${l.num}" class="code-line">
+          <span class="line-num">${l.num}</span>
+          <span>${l.html || " "}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderGraph(step) {
+      const svg = document.getElementById("graph-svg");
+      const r = 20;
+
+      const edges = [];
+      const edgeKeys = new Set();
+      for (const [u, list] of Object.entries(step.adj)) {
+        for (const v of list) {
+          edges.push({ from: u, to: v });
+          edgeKeys.add(`${u}->${v}`);
+        }
+      }
+
+      const defs = `
+        <defs>
+          <marker id="arr-def" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 z" fill="#475569" />
+          </marker>
+          <marker id="arr-new" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 z" fill="#38bdf8" />
+          </marker>
+          <marker id="arr-act" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="#a855f7" />
+          </marker>
+          <marker id="arr-safe" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 z" fill="#10b981" />
+          </marker>
+          <marker id="arr-cyc" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="#f43f5e" />
+          </marker>
+        </defs>
+      `;
+
+      let edgeSvg = "";
+      for (const { from, to } of edges) {
+        const p1 = nodePositions[from];
+        const p2 = nodePositions[to];
+        if (!p1 || !p2) continue;
+
+        const isCyc = step.cycleEdge && step.cycleEdge.from === from && step.cycleEdge.to === to;
+        const isAct = step.activeEdge && step.activeEdge.from === from && step.activeEdge.to === to;
+        const isNew = step.newEdge && step.newEdge.from === from && step.newEdge.to === to;
+        const isSafe = step.visit[from] === false && step.visit[to] === false;
+
+        let color = "#475569";
+        let width = "1.6";
+        let opacity = edges.length > 20 && !isCyc && !isAct && !isNew ? "0.45" : "0.9";
+        let marker = "url(#arr-def)";
+
+        if (isCyc) {
+          color = "#f43f5e"; width = "3"; opacity = "1"; marker = "url(#arr-cyc)";
+        } else if (isAct) {
+          color = "#a855f7"; width = "2.8"; opacity = "1"; marker = "url(#arr-act)";
+        } else if (isNew) {
+          color = "#38bdf8"; width = "2.6"; opacity = "1"; marker = "url(#arr-new)";
+        } else if (isSafe) {
+          color = "#10b981"; width = "1.9"; marker = "url(#arr-safe)";
+        }
+
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const ux = dx / dist;
+        const uy = dy / dist;
+
+        const hasReverse = edgeKeys.has(`${to}->${from}`);
+        if (hasReverse) {
+          const nx = -uy, ny = ux;
+          const cx = (p1.x + p2.x) / 2 + nx * 24;
+          const cy = (p1.y + p2.y) / 2 + ny * 24;
+          const sLen = Math.hypot(cx - p1.x, cy - p1.y) || 1;
+          const eLen = Math.hypot(p2.x - cx, p2.y - cy) || 1;
+          const x1 = p1.x + ((cx - p1.x) / sLen) * (r + 1);
+          const y1 = p1.y + ((cy - p1.y) / sLen) * (r + 1);
+          const x2 = p2.x - ((p2.x - cx) / eLen) * (r + 4);
+          const y2 = p2.y - ((p2.y - cy) / eLen) * (r + 4);
+          edgeSvg += `<path d="M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}" fill="none" stroke="${color}" stroke-width="${width}" stroke-opacity="${opacity}" marker-end="${marker}" />`;
+        } else {
+          const x1 = p1.x + ux * (r + 1);
+          const y1 = p1.y + uy * (r + 1);
+          const x2 = p2.x - ux * (r + 4);
+          const y2 = p2.y - uy * (r + 4);
+          edgeSvg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}" stroke-opacity="${opacity}" marker-end="${marker}" />`;
+        }
+      }
+
+      let nodeSvg = "";
+      for (const [ch, pos] of Object.entries(nodePositions)) {
+        const st = step.visit[ch];
+        const isCycTarget = step.cycleEdge && step.cycleEdge.to === ch;
+        const isAct = step.activeChar === ch;
+        const isNei = step.neighborChar === ch;
+
+        let fill = "#181c26";
+        let stroke = "#475569";
+        let sw = "2";
+        let txt = "#f1f5f9";
+        let tag = "";
+        let tagColor = "";
+
+        if (isCycTarget) {
+          fill = "#4c0519"; stroke = "#f43f5e"; sw = "3"; txt = "#ffe4e6";
+          tag = "CYCLE"; tagColor = "#f43f5e";
+        } else if (st === true) {
+          fill = "#451a03"; stroke = "#f59e0b"; sw = isAct ? "3" : "2.4"; txt = "#fef3c7";
+          tag = "True"; tagColor = "#f59e0b";
+        } else if (st === false) {
+          fill = "#064e3b"; stroke = "#10b981"; sw = "2.4"; txt = "#d1fae5";
+          tag = "False"; tagColor = "#10b981";
+        } else if (isAct) {
+          fill = "#0c4a6e"; stroke = "#38bdf8"; sw = "2.6"; txt = "#e0f2fe";
+        } else if (isNei) {
+          fill = "#3b0764"; stroke = "#a855f7"; sw = "2.6"; txt = "#f3e8ff";
+        }
+
+        nodeSvg += `
+          <g class="graph-node" data-char="${ch}" transform="translate(${pos.x}, ${pos.y})">
+            <circle r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />
+            <text x="0" y="5" text-anchor="middle" fill="${txt}" font-size="14" font-family="ui-monospace, monospace" font-weight="700">'${ch}'</text>
+            ${tag ? `
+              <rect x="-18" y="16" width="36" height="13" rx="4" fill="#0f1117" stroke="${tagColor}" stroke-width="1" />
+              <text x="0" y="25.5" text-anchor="middle" fill="${tagColor}" font-size="8.5" font-family="ui-monospace, monospace" font-weight="700">${tag}</text>
+            ` : ""}
+          </g>
+        `;
+      }
+
+      svg.innerHTML = defs + edgeSvg + nodeSvg;
+    }
+
+    // =========================================================================
+    // 5. RENDER UI FOR CURRENT STEP
+    // =========================================================================
+    function renderUI() {
+      const step = steps[currentStep];
+      if (!step) return;
+
+      const uniqueCount = Object.keys(step.adj).length;
+      document.getElementById("stats-pill").textContent = `${currentWords.length} words • ${uniqueCount} chars`;
+      document.getElementById("adj-meta").textContent = `${uniqueCount} chars`;
+
+      // Playback counter & buttons
+      document.getElementById("step-cur").textContent = currentStep;
+      document.getElementById("step-max").textContent = steps.length - 1;
+      document.getElementById("btn-prev").disabled = currentStep === 0;
+      document.getElementById("btn-reset").disabled = currentStep === 0;
+      document.getElementById("btn-next").disabled = currentStep === steps.length - 1;
+      document.getElementById("btn-end").disabled = currentStep === steps.length - 1;
+
+      // Status banner
+      const badge = document.getElementById("status-badge");
+      badge.textContent = step.badge;
+      badge.className = `status-badge ${step.badgeCls}`;
+      document.getElementById("status-text").innerHTML = step.msg;
+
+      // Code line highlight
+      let activeLineEl = null;
+      CODE_LINES.forEach(l => {
+        const el = document.getElementById(`code-line-${l.num}`);
+        if (!el) return;
+        el.className = "code-line";
+        if (l.num === step.line) {
+          el.classList.add(`hl-${step.theme}`);
+          activeLineEl = el;
+        }
+      });
+      if (activeLineEl) {
+        activeLineEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+
+      // Variables
+      document.getElementById("v-i").textContent = step.vars.i;
+      document.getElementById("v-j").textContent = step.vars.j;
+      document.getElementById("v-w1j").textContent = step.vars.w1j;
+      document.getElementById("v-w2j").textContent = step.vars.w2j;
+      document.getElementById("v-c").textContent = step.vars.c;
+      document.getElementById("v-nei").textContent = step.vars.nei;
+      document.getElementById("v-vc").textContent = step.vars.vc;
+
+      // Words ribbon
+      const activeIdx = step.pair ? step.pair.i : -1;
+      document.getElementById("words-ribbon").innerHTML = currentWords.map((w, idx) => {
+        let cls = "word-chip";
+        if (idx === activeIdx) cls += " w1-active";
+        else if (idx === activeIdx + 1) cls += " w2-active";
+        return `<span class="${cls}">${idx}: "${w}"</span>`;
+      }).join("");
+
+      // Pair comparison box
+      const pairPill = document.getElementById("pair-pill");
+      const pairBox = document.getElementById("pair-box");
+      if (!step.pair) {
+        pairPill.textContent = step.line === 3 ? "Character Scan" : "Phase 1 Complete";
+        pairBox.innerHTML = `<span style="font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);">${
+          step.line === 3
+            ? `Unique chars: [${Object.keys(step.adj).map(c => `'${c}'`).join(", ")}]`
+            : `All ${Math.max(0, currentWords.length - 1)} adjacent word pairs evaluated.`
+        }</span>`;
+      } else {
+        const { w1, w2, j, status } = step.pair;
+        const maxLen = Math.max(w1.length, w2.length);
+        pairPill.textContent = status === "mismatch"
+          ? `Edge '${w1[j]}' → '${w2[j]}'`
+          : status === "prefix_error"
+            ? 'Prefix Violation → ""'
+            : `Comparing "${w1}" vs "${w2}"`;
+
+        let cols = "";
+        for (let col = 0; col < maxLen; col++) {
+          const c1 = col < w1.length ? w1[col] : "·";
+          const c2 = col < w2.length ? w2[col] : "·";
+          let cls1 = "char-cell";
+          let cls2 = "char-cell";
+          let ptr = `${col}`;
+
+          if (status === "prefix_error") {
+            if (col >= w2.length) {
+              cls1 += " prefix-err";
+              cls2 += " prefix-err";
+              ptr = "ERR";
+            } else {
+              cls1 += " match";
+              cls2 += " match";
+            }
+          } else if (j !== null && col < j) {
+            cls1 += " match";
+            cls2 += " match";
+          } else if (j === col && status === "match") {
+            cls1 += " match";
+            cls2 += " match";
+            ptr = `j=${col}`;
+          } else if (j === col && status === "mismatch") {
+            cls1 += " mismatch-1";
+            cls2 += " mismatch-2";
+            ptr = `j=${col} ≠`;
+          }
+
+          cols += `
+            <div class="char-col">
+              <span class="ptr-label">${ptr}</span>
+              <div class="${cls1}">${c1}</div>
+              <div class="${cls2}">${c2}</div>
+            </div>
+          `;
+        }
+
+        pairBox.innerHTML = `
+          <div class="char-grid">
+            <div class="row-labels">
+              <div style="height:28px; display:flex; align-items:center; color:#fcd34d;">w1:</div>
+              <div style="height:28px; display:flex; align-items:center; color:#d8b4fe;">w2:</div>
+            </div>
+            <div class="char-cols">${cols}</div>
+          </div>
+        `;
+      }
+
+      // Pair log
+      const totalPairs = Math.max(0, currentWords.length - 1);
+      document.getElementById("pair-log-count").textContent = `${step.pairLog.length} / ${totalPairs} pairs`;
+      const logEl = document.getElementById("pair-log");
+      if (step.pairLog.length === 0) {
+        logEl.innerHTML = `<span style="color:var(--text-muted); padding:4px;">No adjacent pairs evaluated yet.</span>`;
+      } else {
+        logEl.innerHTML = step.pairLog.map((item, idx) => {
+          const isLast = idx === step.pairLog.length - 1;
+          const color = item.type === "edge" ? "#6ee7b7" : (item.type === "error" ? "#fda4af" : "#94a3b8");
+          return `
+            <div class="pair-log-item ${isLast ? "active-log" : ""}" onclick="jumpToStep(${item.stepIdx})">
+              <span style="color:var(--text-secondary);">#${item.i} "${item.w1}" vs "${item.w2}"</span>
+              <span style="color:${color}; font-weight:600;">${item.summary}</span>
+            </div>
+          `;
+        }).join("");
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      // Post-order res & final output
+      document.getElementById("res-count").textContent = `${step.res.length} / ${uniqueCount}`;
+      const resEl = document.getElementById("res-chips");
+      if (step.res.length === 0) {
+        resEl.innerHTML = `<span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);">[] (appends on DFS unwind)</span>`;
+      } else {
+        resEl.innerHTML = step.res.map((ch, idx) => `
+          <span class="res-chip ${idx === step.res.length - 1 ? "latest" : ""}">'${ch}'</span>
+        `).join("");
+      }
+
+      const outEl = document.getElementById("final-output");
+      if (step.output.status === "valid") {
+        outEl.innerHTML = `<span style="background:var(--emerald-soft); border:1px solid var(--emerald); color:#6ee7b7; padding:3px 9px; border-radius:6px; font-weight:700; font-size:13px;">${step.output.text}</span>`;
+      } else if (step.output.status === "invalid") {
+        outEl.innerHTML = `<span style="background:var(--rose-soft); border:1px solid var(--rose); color:#fda4af; padding:3px 9px; border-radius:6px; font-weight:700;">${step.output.text}</span>`;
+      } else {
+        outEl.innerHTML = `<span>${step.output.text}</span>`;
+      }
+
+      // adj[c]
+      document.getElementById("adj-list").innerHTML = Object.entries(step.adj).map(([k, list]) => `
+        <div class="ds-row ${step.activeChar === k ? "highlight" : ""}">
+          <span style="color:#7dd3fc; font-weight:700;">'${k}':</span>
+          <span style="color:var(--text-secondary);">{${list.map(x => `'${x}'`).join(", ")}}</span>
+        </div>
+      `).join("");
+
+      // visit = {}
+      const visitEntries = Object.entries(step.visit);
+      const visitEl = document.getElementById("visit-list");
+      if (visitEntries.length === 0) {
+        visitEl.innerHTML = `<span style="color:var(--text-muted);">{} (all unvisited)</span>`;
+      } else {
+        visitEl.innerHTML = visitEntries.map(([k, v]) => `
+          <span class="visit-chip ${v ? "visit-true" : "visit-false"}">'${k}': ${v ? "True" : "False"}</span>
+        `).join("");
+      }
+
+      // Call stack
+      document.getElementById("stack-depth").textContent = `depth = ${step.stack.length}`;
+      const stackEl = document.getElementById("stack-list");
+      if (step.stack.length === 0) {
+        stackEl.innerHTML = `<span style="color:var(--text-muted);">Stack empty</span>`;
+      } else {
+        stackEl.innerHTML = [...step.stack].reverse().map((ch, idx) => `
+          <div class="ds-row ${idx === 0 ? "highlight" : ""}">
+            <span style="color:${idx === 0 ? "#fde68a" : "var(--text-secondary)"}; font-weight:${idx === 0 ? "700" : "400"};">${idx === 0 ? "▶ " : ""}dfs('${ch}')</span>
+            <span style="color:#f59e0b; font-size:10px;">True</span>
+          </div>
+        `).join("");
+      }
+
+      // Render SVG graph
+      renderGraph(step);
+    }
+
+    // =========================================================================
+    // 6. DRAGGABLE SVG NODES
+    // =========================================================================
+    const svgNode = document.getElementById("graph-svg");
+
+    svgNode.addEventListener("pointerdown", (e) => {
+      const target = e.target.closest(".graph-node");
+      if (!target) return;
+      draggedNode = target.getAttribute("data-char");
+      svgNode.setPointerCapture(e.pointerId);
+    });
+
+    svgNode.addEventListener("pointermove", (e) => {
+      if (!draggedNode) return;
+      const rect = svgNode.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 680;
+      const y = ((e.clientY - rect.top) / rect.height) * 340;
+      nodePositions[draggedNode] = {
+        x: Math.max(28, Math.min(652, Math.round(x))),
+        y: Math.max(28, Math.min(312, Math.round(y)))
+      };
+      renderGraph(steps[currentStep]);
+    });
+
+    svgNode.addEventListener("pointerup", (e) => {
+      if (draggedNode) {
+        draggedNode = null;
+        svgNode.releasePointerCapture(e.pointerId);
+      }
+    });
+
+    // =========================================================================
+    // 7. CONTROLS & INITIALIZATION
+    // =========================================================================
+    function stopPlay() {
+      if (playInterval) {
+        clearInterval(playInterval);
+        playInterval = null;
+      }
+      document.getElementById("btn-play").textContent = "Play";
+    }
+
+    function togglePlay() {
+      if (playInterval) {
+        stopPlay();
+        return;
+      }
+      if (currentStep >= steps.length - 1) {
+        currentStep = 0;
+        renderUI();
+      }
+      document.getElementById("btn-play").textContent = "Pause";
+      playInterval = setInterval(() => {
+        if (currentStep < steps.length - 1) {
+          currentStep++;
+          renderUI();
+        } else {
+          stopPlay();
+        }
+      }, SPEEDS[speedVal].ms);
+    }
+
+    function stepForward() {
+      stopPlay();
+      if (currentStep < steps.length - 1) {
+        currentStep++;
+        renderUI();
+      }
+    }
+
+    function stepBackward() {
+      stopPlay();
+      if (currentStep > 0) {
+        currentStep--;
+        renderUI();
+      }
+    }
+
+    function resetSteps() {
+      stopPlay();
+      currentStep = 0;
+      renderUI();
+    }
+
+    function jumpToEnd() {
+      stopPlay();
+      currentStep = Math.max(0, steps.length - 1);
+      renderUI();
+    }
+
+    function jumpToStep(idx) {
+      stopPlay();
+      if (idx >= 0 && idx < steps.length) {
+        currentStep = idx;
+        renderUI();
+      }
+    }
+
+    function onSpeedChange(val) {
+      speedVal = Number(val);
+      document.getElementById("speed-label").textContent = SPEEDS[speedVal].label;
+      if (playInterval) {
+        stopPlay();
+        togglePlay();
+      }
+    }
+
+    function initializeWords(words, presetIndex = -1) {
+      stopPlay();
+      currentWords = [...words];
+      nodePositions = computeNodePositions(currentWords);
+      steps = buildExecutionTrace(currentWords);
+      currentStep = 0;
+
+      [0, 1, 2, 3].forEach(i => {
+        const btn = document.getElementById(`preset-btn-${i}`);
+        if (btn) btn.className = i === presetIndex ? "preset-active" : "";
+      });
+
+      document.getElementById("custom-words-input").value = currentWords.map(w => `"${w}"`).join(",");
+      document.getElementById("custom-error").style.display = "none";
+      renderUI();
+    }
+
+    function selectPreset(idx) {
+      if (PRESETS[idx]) {
+        initializeWords(PRESETS[idx], idx);
+      }
+    }
+
+    function loadCustomWords() {
+      const errEl = document.getElementById("custom-error");
+      const raw = document.getElementById("custom-words-input").value.trim();
+      try {
+        let parsed = [];
+        if (raw.startsWith("[")) {
+          parsed = JSON.parse(raw);
+        } else {
+          parsed = raw.split(",").map(s => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+        }
+
+        if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 50) {
+          throw new Error("Enter 1 to 50 lowercase words.");
+        }
+        const chars = new Set();
+        for (const w of parsed) {
+          if (typeof w !== "string" || !/^[a-z]+$/.test(w)) {
+            throw new Error(`Invalid word "${w}" (use a-z only).`);
+          }
+          for (const c of w) chars.add(c);
+        }
+        if (chars.size > 26) {
+          throw new Error("Max 26 distinct characters supported.");
+        }
+        initializeWords(parsed, -1);
+      } catch (err) {
+        errEl.textContent = err.message || "Invalid input format.";
+        errEl.style.display = "inline";
+      }
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (document.activeElement && document.activeElement.tagName === "INPUT") return;
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        stepForward();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        stepBackward();
+      } else if (e.key === " ") {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key.toLowerCase() === "r") {
+        resetSteps();
+      }
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      renderCodeLines();
+      selectPreset(0);
+    });
+  </script>
+</body>
+</html>
