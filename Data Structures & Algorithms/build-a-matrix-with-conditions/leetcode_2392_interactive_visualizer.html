@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeetCode 2392: Build a Matrix With Conditions — DFS Topological Sort Visualizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    /* Custom scrollbar for code and state panels */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.5);
+    }
+    .code-line {
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.08); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.7; }
+    }
+    .node-pulse {
+      animation: pulse-ring 1.6s infinite ease-in-out;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen font-sans antialiased transition-colors duration-200">
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-30 border-b border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20">
+          2D
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight">LeetCode 2392: Build a Matrix With Conditions</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+              Hard
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">
+            Interactive DFS Topological Sort &amp; 2D Coordinate Mapping Visualizer
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="themeToggle" class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition" title="Toggle Light/Dark Theme">
+          <svg id="sunIcon" class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+          <svg id="moonIcon" class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="max-w-[1440px] mx-auto px-4 sm:px-6 py-5 space-y-5">
+    <!-- Input Configuration & Playback Bar -->
+    <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-4">
+      <!-- Presets & Custom Inputs -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+        <div class="lg:col-span-3 space-y-1.5">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Test Case Presets
+          </label>
+          <div class="flex flex-wrap gap-1.5">
+            <button data-preset="ex1" class="preset-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white shadow-sm transition">
+              Example 1 (k=3)
+            </button>
+            <button data-preset="ex2" class="preset-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+              Larger (k=4)
+            </button>
+            <button data-preset="cycle" class="preset-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+              Cycle (Invalid)
+            </button>
+          </div>
+        </div>
+
+        <div class="lg:col-span-1 space-y-1">
+          <label for="inputK" class="block text-xs font-semibold text-slate-500 dark:text-slate-400">k (1..8)</label>
+          <input id="inputK" type="number" min="1" max="8" value="3"
+            class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div class="lg:col-span-3 space-y-1">
+          <label for="inputRowCond" class="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+            rowConditions <span class="font-normal text-slate-400">(above → below)</span>
+          </label>
+          <input id="inputRowCond" type="text" value="[[1,2],[3,2]]"
+            class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div class="lg:col-span-3 space-y-1">
+          <label for="inputColCond" class="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+            colConditions <span class="font-normal text-slate-400">(left → right)</span>
+          </label>
+          <input id="inputColCond" type="text" value="[[2,1],[3,2]]"
+            class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div class="lg:col-span-2">
+          <button id="applyBtn" class="w-full py-1.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-sm transition flex items-center justify-center gap-1.5">
+            <span>Load &amp; Reset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Inline Validation Error Banner -->
+      <div id="inputError" class="hidden px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-medium"></div>
+
+      <!-- Playback Controls & Status Banner -->
+      <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <button id="btnReset" class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Reset to Step 0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          </button>
+          <button id="btnPrev" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold flex items-center gap-1 transition">
+            <span>← Prev</span>
+          </button>
+          <button id="btnPlayPause" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition min-w-[92px] justify-center">
+            <span id="playPauseIcon">▶</span>
+            <span id="playPauseLabel">Play</span>
+          </button>
+          <button id="btnNext" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold flex items-center gap-1 transition">
+            <span>Next →</span>
+          </button>
+        </div>
+
+        <!-- Step Counter & Scrubber -->
+        <div class="flex-1 min-w-[200px] max-w-md flex items-center gap-3">
+          <span id="stepCounter" class="text-xs font-mono font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+            Step 0 / 0
+          </span>
+          <input id="stepScrubber" type="range" min="0" max="0" value="0"
+            class="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+        </div>
+
+        <!-- Speed Control -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Speed:</span>
+          <select id="speedSelect" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono">
+            <option value="1200">0.5x</option>
+            <option value="700" selected>1.0x</option>
+            <option value="350">2.0x</option>
+            <option value="140">4.0x</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Live Step Explanation Callout -->
+      <div id="stepBanner" class="px-4 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <span id="phaseBadge" class="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-indigo-600 text-white">
+            INIT
+          </span>
+          <p id="stepDescription" class="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200">
+            Ready to simulate DFS topological sort.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main 2-Column Interactive Grid: Left (Graphs + Matrix + State) | Right (Python Code) -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+      <!-- Left Column (7 cols): Dependency Graphs, Live DFS Sets, and 2D Result Matrix -->
+      <div class="xl:col-span-7 space-y-5">
+        <!-- Dependency Graphs Card -->
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-sm font-bold tracking-tight flex items-center gap-2">
+              <span>1. Dependency Graphs (DFS Traversal)</span>
+            </h2>
+            <!-- Node Legend -->
+            <div class="flex flex-wrap items-center gap-3 text-[11px] font-medium">
+              <span class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-400 dark:bg-slate-600"></span> Unvisited
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> In <code>path</code> (Active)
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Visited (<code>order</code>)
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Cycle Detected
+              </span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Row Graph -->
+            <div id="rowGraphCard" class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-3 transition-all">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">Row Graph (rowConditions)</span>
+                <span id="rowGraphStatus" class="text-[11px] font-mono text-slate-500">Pending</span>
+              </div>
+              <svg id="rowGraphSvg" viewBox="0 0 320 230" class="w-full h-52 select-none"></svg>
+            </div>
+
+            <!-- Column Graph -->
+            <div id="colGraphCard" class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-3 transition-all">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">Column Graph (colConditions)</span>
+                <span id="colGraphStatus" class="text-[11px] font-mono text-slate-500">Pending</span>
+              </div>
+              <svg id="colGraphSvg" viewBox="0 0 320 230" class="w-full h-52 select-none"></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Variable State & 2D Matrix Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+          <!-- Live DFS Data Structures -->
+          <div class="md:col-span-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-3">
+            <h2 class="text-sm font-bold tracking-tight">2. Live DFS &amp; Topological State</h2>
+
+            <div class="space-y-2.5 text-xs font-mono">
+              <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 mb-1 flex justify-between">
+                  <span>path (current recursion stack)</span>
+                  <span class="text-amber-500">cycle check</span>
+                </div>
+                <div id="statePath" class="font-semibold text-amber-600 dark:text-amber-400 min-h-[18px]">{ }</div>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 mb-1">visit (all visited nodes)</div>
+                <div id="stateVisit" class="font-semibold text-slate-700 dark:text-slate-200 min-h-[18px]">{ }</div>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 mb-1">order (post-order DFS output)</div>
+                <div id="stateOrder" class="font-semibold text-emerald-600 dark:text-emerald-400 min-h-[18px]">[ ]</div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 pt-1">
+                <div class="p-2.5 rounded-xl bg-indigo-500/5 border border-indigo-500/20">
+                  <div class="text-[11px] text-indigo-600 dark:text-indigo-400 font-sans font-semibold mb-1">row_order (reversed)</div>
+                  <div id="stateRowOrder" class="font-bold text-slate-800 dark:text-slate-100">—</div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-indigo-500/5 border border-indigo-500/20">
+                  <div class="text-[11px] text-indigo-600 dark:text-indigo-400 font-sans font-semibold mb-1">col_order (reversed)</div>
+                  <div id="stateColOrder" class="font-bold text-slate-800 dark:text-slate-100">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive k x k Matrix Grid -->
+          <div class="md:col-span-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-between space-y-3">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <h2 class="text-sm font-bold tracking-tight">3. Result Matrix (<code>k × k</code>)</h2>
+                <span id="matrixStatusBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                  Waiting
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                Hover over any placed number to inspect its <code>(row, col)</code> mapping.
+              </p>
+            </div>
+
+            <div id="matrixContainer" class="flex-1 flex items-center justify-center py-2">
+              <!-- Populated dynamically by JS -->
+            </div>
+
+            <div id="matrixInspector" class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 min-h-[42px] flex items-center justify-center text-center">
+              Complete both topological sorts to map <code>1..k</code> into the 2D grid.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column (5 cols): Synchronized Python Code Walkthrough -->
+      <div class="xl:col-span-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden flex flex-col">
+        <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-900">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="ml-1.5 text-xs font-mono font-semibold text-slate-600 dark:text-slate-300">solution.py</span>
+          </div>
+          <button id="copyCodeBtn" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-300/70 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <span id="copyBtnText">Copy Code</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto py-2 bg-slate-950 text-slate-100 font-mono text-[12px] leading-relaxed">
+          <table class="w-full border-collapse" id="codeTable">
+            <!-- Lines injected via JS -->
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Algorithm Breakdown & Complexity Section -->
+    <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+      <h2 class="text-base font-bold tracking-tight mb-3">Algorithm Breakdown &amp; Complexity Analysis</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/70 dark:border-slate-800 space-y-1.5">
+          <h3 class="font-bold text-indigo-600 dark:text-indigo-400">1. Decoupling 2D into Two 1D Orders</h3>
+          <p class="leading-relaxed">
+            Row constraints (<code>above → below</code>) only restrict vertical indices, while column constraints (<code>left → right</code>) only restrict horizontal indices. Because each number <code>1..k</code> appears once in the matrix, solving two independent topological sorts gives a unique coordinate <code>(val_to_row[num], val_to_col[num])</code> for every number without collisions.
+          </p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/70 dark:border-slate-800 space-y-1.5">
+          <h3 class="font-bold text-amber-600 dark:text-amber-400">2. Cycle Detection: <code>path</code> vs <code>visit</code></h3>
+          <p class="leading-relaxed">
+            <code>visit</code> tracks all nodes ever explored so we never re-compute a finished subgraph. <code>path</code> tracks only ancestors on the <em>current</em> DFS recursion stack. If <code>src in path</code>, we found a back-edge (a cycle like <code>1 → 2 → 1</code>), making a valid ordering impossible (returns <code>[]</code>). Post-order appends <code>src</code> after all descendants finish, so reversing <code>order[::-1]</code> yields the topological sort.
+          </p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/70 dark:border-slate-800 space-y-1.5">
+          <h3 class="font-bold text-emerald-600 dark:text-emerald-400">3. Time &amp; Space Complexity</h3>
+          <ul class="space-y-1 leading-relaxed">
+            <li><strong>Time Complexity:</strong> <code>O(k² + R + C)</code> — Building graphs and running DFS takes <code>O(k + R + C)</code>, and initializing/filling the <code>k × k</code> matrix takes <code>O(k²)</code>.</li>
+            <li><strong>Space Complexity:</strong> <code>O(k² + R + C)</code> — Adjacency lists store <code>R + C</code> edges, recursion stack &amp; sets use <code>O(k)</code>, and the output matrix uses <code>O(k²)</code>.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // =========================================================================
+    // 1. EXACT PYTHON SOURCE CODE (1-indexed line mapping for walkthrough)
+    // =========================================================================
+    const PYTHON_CODE_LINES = [
+      "class Solution:",
+      "    def buildMatrix(self, k: int, rowConditions: List[List[int]], colConditions: List[List[int]]) -> List[List[int]]:",
+      "        def dfs(src, adj, visit, path, order):",
+      "            if src in path:",
+      "                return False",
+      "            if src in visit:",
+      "                return True",
+      "            visit.add(src)",
+      "            path.add(src)",
+      "            for nei in adj[src]:",
+      "                if not dfs(nei, adj, visit, path, order):",
+      "                    return False",
+      "            path.remove(src)",
+      "            order.append(src)",
+      "            return True",
+      "",
+      "        def topo_sort(edges):",
+      "            adj = defaultdict(list)",
+      "            for src, dst in edges:",
+      "                adj[src].append(dst)",
+      "",
+      "            visit, path = set(), set()",
+      "            order = []",
+      "            for src in range(1, k + 1):",
+      "                if src not in visit:",
+      "                    if not dfs(src, adj, visit, path, order):",
+      "                        return []",
+      "            return order[::-1]",
+      "",
+      "        row_order = topo_sort(rowConditions)",
+      "        if not row_order: return []",
+      "",
+      "        col_order = topo_sort(colConditions)",
+      "        if not col_order: return []",
+      "",
+      "        val_to_row = {num: i for i, num in enumerate(row_order)}",
+      "        val_to_col = {num: i for i, num in enumerate(col_order)}",
+      "        res = [[0] * k for _ in range(k)]",
+      "        for num in range(1, k + 1):",
+      "            r, c = val_to_row[num], val_to_col[num]",
+      "            res[r][c] = num",
+      "",
+      "        return res"
+    ];
+
+    // Basic Python syntax highlighter for clean display
+    function highlightPythonLine(text) {
+      if (!text) return "&nbsp;";
+      let escaped = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      // Highlight keywords
+      escaped = escaped.replace(
+        /\b(class|def|if|in|not|return|for|True|False)\b/g,
+        '<span class="text-purple-400 font-semibold">$1</span>'
+      );
+      // Highlight built-ins / types
+      escaped = escaped.replace(
+        /\b(self|int|List|defaultdict|list|set|range|enumerate)\b/g,
+        '<span class="text-sky-400">$1</span>'
+      );
+      // Highlight function names
+      escaped = escaped.replace(
+        /\b(buildMatrix|dfs|topo_sort|add|remove|append)\b/g,
+        '<span class="text-amber-300">$1</span>'
+      );
+      return escaped;
+    }
+
+    function renderCodeTable() {
+      const table = document.getElementById("codeTable");
+      table.innerHTML = PYTHON_CODE_LINES.map((line, idx) => {
+        const lineNum = idx + 1;
+        return `
+          <tr id="code-line-${lineNum}" class="code-line border-l-2 border-transparent">
+            <td class="select-none text-right pr-3 pl-3 py-0.5 text-slate-600 w-10 text-[11px]">${lineNum}</td>
+            <td class="pr-4 py-0.5 whitespace-pre">${highlightPythonLine(line)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // =========================================================================
+    // 2. PRESETS & STATE MANAGEMENT
+    // =========================================================================
+    const PRESETS = {
+      ex1: {
+        k: 3,
+        rowConditions: [[1, 2], [3, 2]],
+        colConditions: [[2, 1], [3, 2]]
+      },
+      ex2: {
+        k: 4,
+        rowConditions: [[1, 2], [2, 3], [1, 4], [4, 3]],
+        colConditions: [[3, 1], [1, 4], [4, 2]]
+      },
+      cycle: {
+        k: 3,
+        rowConditions: [[1, 2], [2, 3], [3, 1]],
+        colConditions: [[2, 1], [3, 2]]
+      }
+    };
+
+    let state = {
+      k: 3,
+      rowConditions: [[1, 2], [3, 2]],
+      colConditions: [[2, 1], [3, 2]],
+      steps: [],
+      currentStep: 0,
+      isPlaying: false,
+      timerId: null,
+      speed: 700
+    };
+
+    // =========================================================================
+    // 3. EXECUTION TRACE GENERATOR (Exact Mirror of User's Python Algorithm)
+    // =========================================================================
+    function generateExecutionSteps(k, rowConditions, colConditions) {
+      const steps = [];
+
+      // Helper to snapshot current graph states
+      const makeGraphState = (edges) => {
+        const adj = {};
+        for (let i = 1; i <= k; i++) adj[i] = [];
+        for (const [u, v] of edges) adj[u].push(v);
+        return {
+          edges,
+          adj,
+          visit: new Set(),
+          path: new Set(),
+          order: [],
+          activeNode: null,
+          activeEdge: null,
+          cycleEdge: null,
+          status: "Pending" // Pending | Running | Valid | Cycle
+        };
+      };
+
+      const rowGraph = makeGraphState(rowConditions);
+      const colGraph = makeGraphState(colConditions);
+
+      let rowOrder = null;
+      let colOrder = null;
+      let valToRow = null;
+      let valToCol = null;
+      let matrix = Array.from({ length: k }, () => Array(k).fill(0));
+      let activeHighlightCell = null;
+
+      function recordStep(line, phase, description, activeTarget = null) {
+        steps.push({
+          line,
+          phase,
+          description,
+          activeTarget, // 'row' | 'col' | 'matrix' | null
+          rowGraph: {
+            edges: rowGraph.edges,
+            visit: new Set(rowGraph.visit),
+            path: new Set(rowGraph.path),
+            order: [...rowGraph.order],
+            activeNode: rowGraph.activeNode,
+            activeEdge: rowGraph.activeEdge ? [...rowGraph.activeEdge] : null,
+            cycleEdge: rowGraph.cycleEdge ? [...rowGraph.cycleEdge] : null,
+            status: rowGraph.status
+          },
+          colGraph: {
+            edges: colGraph.edges,
+            visit: new Set(colGraph.visit),
+            path: new Set(colGraph.path),
+            order: [...colGraph.order],
+            activeNode: colGraph.activeNode,
+            activeEdge: colGraph.activeEdge ? [...colGraph.activeEdge] : null,
+            cycleEdge: colGraph.cycleEdge ? [...colGraph.cycleEdge] : null,
+            status: colGraph.status
+          },
+          rowOrder: rowOrder ? [...rowOrder] : null,
+          colOrder: colOrder ? [...colOrder] : null,
+          valToRow: valToRow ? { ...valToRow } : null,
+          valToCol: valToCol ? { ...valToCol } : null,
+          matrix: matrix.map((r) => [...r]),
+          activeHighlightCell: activeHighlightCell ? [...activeHighlightCell] : null
+        });
+      }
+
+      recordStep(
+        2,
+        "START",
+        `Starting buildMatrix(k=${k}) with ${rowConditions.length} row condition(s) and ${colConditions.length} column condition(s).`
+      );
+
+      function runTopoSort(graphObj, label, callLine) {
+        const targetKey = label === "row" ? "row" : "col";
+        graphObj.status = "Running";
+
+        recordStep(
+          callLine,
+          `${label.toUpperCase()} SORT`,
+          `Calling topo_sort(${label}Conditions) to build adjacency list for ${label} constraints.`,
+          targetKey
+        );
+
+        recordStep(
+          22,
+          `${label.toUpperCase()} SORT`,
+          `Initialized empty visit=set(), path=set(), and order=[] for ${label} graph.`,
+          targetKey
+        );
+
+        function dfs(src, parent = null) {
+          graphObj.activeNode = src;
+          if (parent !== null) graphObj.activeEdge = [parent, src];
+
+          recordStep(
+            3,
+            `${label.toUpperCase()} DFS`,
+            `Enter dfs(src=${src}) in ${label} graph.`,
+            targetKey
+          );
+
+          // Line 4: if src in path:
+          if (graphObj.path.has(src)) {
+            if (parent !== null) graphObj.cycleEdge = [parent, src];
+            graphObj.status = "Cycle";
+            recordStep(
+              5,
+              "CYCLE!",
+              `Cycle detected! Node ${src} is already in current recursion path {${[...graphObj.path].join(", ")}}. Returning False.`,
+              targetKey
+            );
+            return false;
+          }
+
+          // Line 6: if src in visit:
+          if (graphObj.visit.has(src)) {
+            recordStep(
+              7,
+              `${label.toUpperCase()} DFS`,
+              `Node ${src} is already in visit (and not in path). Already processed — returning True.`,
+              targetKey
+            );
+            graphObj.activeEdge = null;
+            return true;
+          }
+
+          // Line 8-9: visit.add(src); path.add(src)
+          graphObj.visit.add(src);
+          graphObj.path.add(src);
+          recordStep(
+            9,
+            `${label.toUpperCase()} DFS`,
+            `Added ${src} to visit and active recursion path.`,
+            targetKey
+          );
+
+          // Line 10: for nei in adj[src]:
+          for (const nei of graphObj.adj[src]) {
+            graphObj.activeNode = src;
+            graphObj.activeEdge = [src, nei];
+            recordStep(
+              11,
+              `${label.toUpperCase()} DFS`,
+              `Exploring directed edge ${src} → ${nei} (${src} must precede ${nei}).`,
+              targetKey
+            );
+
+            if (!dfs(nei, src)) {
+              recordStep(
+                12,
+                "CYCLE!",
+                `Propagating False up the call stack from dfs(${nei}).`,
+                targetKey
+              );
+              return false;
+            }
+          }
+
+          // Line 13-14: path.remove(src); order.append(src)
+          graphObj.path.delete(src);
+          graphObj.order.push(src);
+          graphObj.activeNode = src;
+          graphObj.activeEdge = null;
+          recordStep(
+            14,
+            `${label.toUpperCase()} DFS`,
+            `Finished all neighbors of ${src}. Removed ${src} from path and appended to post-order: [${graphObj.order.join(", ")}].`,
+            targetKey
+          );
+
+          return true;
+        }
+
+        for (let src = 1; src <= k; src++) {
+          graphObj.activeNode = src;
+          graphObj.activeEdge = null;
+          if (!graphObj.visit.has(src)) {
+            recordStep(
+              26,
+              `${label.toUpperCase()} SORT`,
+              `Node ${src} is unvisited. Starting outer loop dfs(${src}).`,
+              targetKey
+            );
+            if (!dfs(src, null)) {
+              recordStep(
+                27,
+                "INVALID",
+                `topo_sort(${label}Conditions) failed due to cycle. Returning [].`,
+                targetKey
+              );
+              return [];
+            }
+          } else {
+            recordStep(
+              25,
+              `${label.toUpperCase()} SORT`,
+              `Outer loop checks node ${src}: already in visit, skipping.`,
+              targetKey
+            );
+          }
+        }
+
+        graphObj.activeNode = null;
+        graphObj.activeEdge = null;
+        graphObj.status = "Valid";
+        const reversed = [...graphObj.order].reverse();
+        recordStep(
+          28,
+          `${label.toUpperCase()} DONE`,
+          `Reversed post-order [${graphObj.order.join(", ")}] → valid ${label}_order = [${reversed.join(", ")}].`,
+          targetKey
+        );
+        return reversed;
+      }
+
+      // Step A: Row Topological Sort
+      rowOrder = runTopoSort(rowGraph, "row", 30);
+      if (rowOrder.length === 0) {
+        recordStep(
+          31,
+          "RETURN []",
+          `row_order is empty (cycle in rowConditions). No valid matrix exists — returning [].`,
+          "row"
+        );
+        return steps;
+      }
+
+      // Step B: Column Topological Sort
+      colOrder = runTopoSort(colGraph, "col", 33);
+      if (colOrder.length === 0) {
+        recordStep(
+          34,
+          "RETURN []",
+          `col_order is empty (cycle in colConditions). No valid matrix exists — returning [].`,
+          "col"
+        );
+        return steps;
+      }
+
+      // Step C: Build Coordinate Maps
+      valToRow = {};
+      rowOrder.forEach((num, idx) => { valToRow[num] = idx; });
+      recordStep(
+        36,
+        "MAP ROWS",
+        `Built val_to_row map from row_order [${rowOrder.join(", ")}]: ${JSON.stringify(valToRow)}.`,
+        "matrix"
+      );
+
+      valToCol = {};
+      colOrder.forEach((num, idx) => { valToCol[num] = idx; });
+      recordStep(
+        37,
+        "MAP COLS",
+        `Built val_to_col map from col_order [${colOrder.join(", ")}]: ${JSON.stringify(valToCol)}.`,
+        "matrix"
+      );
+
+      // Step D: Populate k x k Matrix
+      recordStep(
+        38,
+        "INIT MATRIX",
+        `Initialized empty ${k}×${k} zero matrix res.`,
+        "matrix"
+      );
+
+      for (let num = 1; num <= k; num++) {
+        const r = valToRow[num];
+        const c = valToCol[num];
+        matrix[r][c] = num;
+        activeHighlightCell = [r, c, num];
+        recordStep(
+          41,
+          "PLACE NUM",
+          `Placed num=${num} at res[${r}][${c}] (row index ${r} in row_order, col index ${c} in col_order).`,
+          "matrix"
+        );
+      }
+
+      activeHighlightCell = null;
+      recordStep(
+        43,
+        "COMPLETE",
+        `All numbers 1..${k} placed satisfying all row and column conditions! Returning res.`,
+        "matrix"
+      );
+
+      return steps;
+    }
+
+    // =========================================================================
+    // 4. SVG GRAPH RENDERER
+    // =========================================================================
+    function renderDependencyGraph(svgId, graphData, k) {
+      const svg = document.getElementById(svgId);
+      const width = 320;
+      const height = 230;
+      const cx = width / 2;
+      const cy = height / 2;
+      const radius = k <= 3 ? 72 : k <= 5 ? 82 : 88;
+      const nodeRadius = k <= 5 ? 18 : 15;
+
+      // Compute circular node coordinates (starting from top -90 deg)
+      const coords = {};
+      for (let i = 1; i <= k; i++) {
+        const angle = -Math.PI / 2 + ((i - 1) * 2 * Math.PI) / k;
+        coords[i] = {
+          x: cx + radius * Math.cos(angle),
+          y: cy + radius * Math.sin(angle)
+        };
+      }
+
+      const markerId = `${svgId}-arrow`;
+      const markerActiveId = `${svgId}-arrow-active`;
+      const markerCycleId = `${svgId}-arrow-cycle`;
+
+      let svgHtml = `
+        <defs>
+          <marker id="${markerId}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#64748b" />
+          </marker>
+          <marker id="${markerActiveId}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#f59e0b" />
+          </marker>
+          <marker id="${markerCycleId}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#f43f5e" />
+          </marker>
+        </defs>
+      `;
+
+      // Check bidirectional edges to curve them slightly so arrowheads don't collide
+      const edgeSet = new Set(graphData.edges.map(([u, v]) => `${u}-${v}`));
+
+      // Render directed edges
+      graphData.edges.forEach(([u, v]) => {
+        if (!coords[u] || !coords[v]) return;
+        const p1 = coords[u];
+        const p2 = coords[v];
+
+        const isCycle =
+          graphData.cycleEdge &&
+          graphData.cycleEdge[0] === u &&
+          graphData.cycleEdge[1] === v;
+        const isActive =
+          graphData.activeEdge &&
+          graphData.activeEdge[0] === u &&
+          graphData.activeEdge[1] === v;
+
+        let stroke = "#64748b";
+        let strokeWidth = "1.75";
+        let marker = `url(#${markerId})`;
+        let dashArray = "";
+
+        if (isCycle) {
+          stroke = "#f43f5e";
+          strokeWidth = "3";
+          marker = `url(#${markerCycleId})`;
+          dashArray = 'stroke-dasharray="4 3"';
+        } else if (isActive) {
+          stroke = "#f59e0b";
+          strokeWidth = "2.75";
+          marker = `url(#${markerActiveId})`;
+        }
+
+        if (u === v) {
+          // Self-loop edge
+          const loopR = 16;
+          svgHtml += `
+            <circle cx="${p1.x}" cy="${p1.y - nodeRadius - 10}" r="${loopR}"
+              fill="none" stroke="${stroke}" stroke-width="${strokeWidth}" ${dashArray} />
+          `;
+          return;
+        }
+
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dist = Math.hypot(dx, dy);
+        const ux = dx / dist;
+        const uy = dy / dist;
+
+        const hasReverse = edgeSet.has(`${v}-${u}`);
+        if (hasReverse) {
+          // Quadratic curve offset perpendicular to edge
+          const nx = -uy;
+          const ny = ux;
+          const curveOffset = 18;
+          const midX = (p1.x + p2.x) / 2 + nx * curveOffset;
+          const midY = (p1.y + p2.y) / 2 + ny * curveOffset;
+
+          const startX = p1.x + ux * (nodeRadius + 2);
+          const startY = p1.y + uy * (nodeRadius + 2);
+          const endX = p2.x - ux * (nodeRadius + 4);
+          const endY = p2.y - uy * (nodeRadius + 4);
+
+          svgHtml += `
+            <path d="M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}"
+              fill="none" stroke="${stroke}" stroke-width="${strokeWidth}" ${dashArray} marker-end="${marker}" />
+          `;
+        } else {
+          const startX = p1.x + ux * (nodeRadius + 2);
+          const startY = p1.y + uy * (nodeRadius + 2);
+          const endX = p2.x - ux * (nodeRadius + 4);
+          const endY = p2.y - uy * (nodeRadius + 4);
+
+          svgHtml += `
+            <line x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"
+              stroke="${stroke}" stroke-width="${strokeWidth}" ${dashArray} marker-end="${marker}" />
+          `;
+        }
+      });
+
+      // Render nodes 1..k
+      for (let i = 1; i <= k; i++) {
+        const { x, y } = coords[i];
+        const inPath = graphData.path.has(i);
+        const inVisit = graphData.visit.has(i);
+        const isCurrent = graphData.activeNode === i;
+        const isCycleNode =
+          graphData.cycleEdge &&
+          (graphData.cycleEdge[0] === i || graphData.cycleEdge[1] === i);
+
+        let fill = "#334155"; // Unvisited slate
+        let stroke = "#64748b";
+        let textFill = "#f8fafc";
+
+        if (isCycleNode) {
+          fill = "#e11d48";
+          stroke = "#fda4af";
+        } else if (inPath) {
+          fill = "#d97706";
+          stroke = "#fcd34d";
+        } else if (inVisit) {
+          fill = "#059669";
+          stroke = "#6ee7b7";
+        }
+
+        if (isCurrent) {
+          svgHtml += `
+            <circle cx="${x}" cy="${y}" r="${nodeRadius + 5}" fill="none" stroke="#818cf8" stroke-width="2.5" class="node-pulse" />
+          `;
+        }
+
+        svgHtml += `
+          <g>
+            <circle cx="${x}" cy="${y}" r="${nodeRadius}" fill="${fill}" stroke="${stroke}" stroke-width="2.2" />
+            <text x="${x}" y="${y}" dy="0.35em" text-anchor="middle" fill="${textFill}"
+              font-family="JetBrains Mono, monospace" font-size="13" font-weight="700">${i}</text>
+          </g>
+        `;
+      }
+
+      svg.innerHTML = svgHtml;
+    }
+
+    // =========================================================================
+    // 5. MATRIX GRID RENDERER
+    // =========================================================================
+    function renderMatrixGrid(stepData, k) {
+      const container = document.getElementById("matrixContainer");
+      const inspector = document.getElementById("matrixInspector");
+      const badge = document.getElementById("matrixStatusBadge");
+
+      if (
+        (stepData.rowOrder && stepData.rowOrder.length === 0) ||
+        (stepData.colOrder && stepData.colOrder.length === 0)
+      ) {
+        badge.textContent = "Invalid ([])";
+        badge.className = "text-[11px] font-mono px-2 py-0.5 rounded bg-rose-500/15 text-rose-500 font-semibold";
+        container.innerHTML = `
+          <div class="px-4 py-6 rounded-xl border border-dashed border-rose-500/40 bg-rose-500/5 text-center space-y-1">
+            <div class="text-sm font-bold text-rose-500">Empty Matrix: [ ]</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Cycle detected in dependency graph.</div>
+          </div>
+        `;
+        inspector.innerHTML = `<span class="text-rose-500 font-medium">No valid ordering exists when a cycle is present.</span>`;
+        return;
+      }
+
+      const hasStartedMatrix = stepData.valToRow !== null;
+      badge.textContent = hasStartedMatrix ? "Populating" : "Waiting";
+      badge.className = hasStartedMatrix
+        ? "text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-semibold"
+        : "text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500";
+
+      const cellSize = k <= 4 ? "w-11 h-11 text-sm" : k <= 6 ? "w-9 h-9 text-xs" : "w-7 h-7 text-[11px]";
+
+      let html = `<div class="inline-grid gap-1.5" style="grid-template-columns: repeat(${k}, minmax(0, 1fr));">`;
+      for (let r = 0; r < k; r++) {
+        for (let c = 0; c < k; c++) {
+          const val = stepData.matrix[r][c];
+          const isJustPlaced =
+            stepData.activeHighlightCell &&
+            stepData.activeHighlightCell[0] === r &&
+            stepData.activeHighlightCell[1] === c;
+
+          let cellClasses = `${cellSize} rounded-lg font-mono font-bold flex items-center justify-center border transition-all duration-200 select-none `;
+          if (val !== 0) {
+            cellClasses += isJustPlaced
+              ? "bg-amber-500 text-white border-amber-300 scale-105 shadow-md shadow-amber-500/30 cursor-pointer"
+              : "bg-indigo-600 text-white border-indigo-400/50 hover:bg-indigo-500 cursor-pointer shadow-sm";
+          } else {
+            cellClasses +=
+              "bg-slate-100 dark:bg-slate-950 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800";
+          }
+
+          html += `
+            <div class="${cellClasses}" data-r="${r}" data-c="${c}" data-val="${val}">
+              ${val}
+            </div>
+          `;
+        }
+      }
+      html += `</div>`;
+      container.innerHTML = html;
+
+      // Attach hover listeners to explain coordinate placement
+      container.querySelectorAll("[data-val]").forEach((cell) => {
+        cell.addEventListener("mouseenter", () => {
+          const val = Number(cell.dataset.val);
+          const r = Number(cell.dataset.r);
+          const c = Number(cell.dataset.c);
+          if (val > 0 && stepData.rowOrder && stepData.colOrder) {
+            inspector.innerHTML = `
+              <span>
+                Number <strong class="text-indigo-500 font-mono">${val}</strong> is at
+                <code class="font-bold">res[${r}][${c}]</code> because it is index
+                <strong class="font-mono">${r}</strong> in <code>row_order</code>
+                and index <strong class="font-mono">${c}</strong> in <code>col_order</code>.
+              </span>
+            `;
+          } else {
+            inspector.innerHTML = `<span class="font-mono text-slate-400">res[${r}][${c}] = 0 (empty filler cell)</span>`;
+          }
+        });
+      });
+    }
+
+    // =========================================================================
+    // 6. MAIN UI UPDATE LOOP
+    // =========================================================================
+    function renderCurrentStep() {
+      const step = state.steps[state.currentStep];
+      if (!step) return;
+
+      // 1. Update Step Counter & Scrubber
+      document.getElementById("stepCounter").textContent = `Step ${state.currentStep} / ${state.steps.length - 1}`;
+      const scrubber = document.getElementById("stepScrubber");
+      scrubber.max = state.steps.length - 1;
+      scrubber.value = state.currentStep;
+
+      // 2. Update Step Banner & Badge
+      const badge = document.getElementById("phaseBadge");
+      badge.textContent = step.phase;
+      if (step.phase.includes("CYCLE") || step.phase.includes("INVALID") || step.phase.includes("RETURN []")) {
+        badge.className = "px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-rose-600 text-white";
+      } else if (step.phase === "COMPLETE") {
+        badge.className = "px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-emerald-600 text-white";
+      } else {
+        badge.className = "px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-indigo-600 text-white";
+      }
+      document.getElementById("stepDescription").textContent = step.description;
+
+      // 3. Highlight Active Code Line
+      document.querySelectorAll(".code-line").forEach((tr) => {
+        tr.classList.remove("bg-indigo-500/20", "border-indigo-400");
+        tr.classList.add("border-transparent");
+      });
+      const activeRow = document.getElementById(`code-line-${step.line}`);
+      if (activeRow) {
+        activeRow.classList.remove("border-transparent");
+        activeRow.classList.add("bg-indigo-500/20", "border-indigo-400");
+        activeRow.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+
+      // 4. Render Row & Column Dependency Graphs
+      renderDependencyGraph("rowGraphSvg", step.rowGraph, state.k);
+      renderDependencyGraph("colGraphSvg", step.colGraph, state.k);
+
+      // Card focus rings & statuses
+      const rowCard = document.getElementById("rowGraphCard");
+      const colCard = document.getElementById("colGraphCard");
+      rowCard.classList.toggle("ring-2", step.activeTarget === "row");
+      rowCard.classList.toggle("ring-indigo-500/50", step.activeTarget === "row");
+      colCard.classList.toggle("ring-2", step.activeTarget === "col");
+      colCard.classList.toggle("ring-indigo-500/50", step.activeTarget === "col");
+
+      document.getElementById("rowGraphStatus").textContent = step.rowGraph.status;
+      document.getElementById("colGraphStatus").textContent = step.colGraph.status;
+
+      // 5. Update Live DFS Data Structures Panel
+      const activeGraph = step.activeTarget === "col" ? step.colGraph : step.rowGraph;
+      const pathArr = [...activeGraph.path];
+      const visitArr = [...activeGraph.visit];
+      const orderArr = activeGraph.order;
+
+      document.getElementById("statePath").textContent = pathArr.length ? `{ ${pathArr.join(", ")} }` : "{ }";
+      document.getElementById("stateVisit").textContent = visitArr.length ? `{ ${visitArr.join(", ")} }` : "{ }";
+      document.getElementById("stateOrder").textContent = orderArr.length ? `[ ${orderArr.join(", ")} ]` : "[ ]";
+
+      document.getElementById("stateRowOrder").textContent =
+        step.rowOrder === null ? "—" : step.rowOrder.length ? `[${step.rowOrder.join(", ")}]` : "[] (Cycle)";
+      document.getElementById("stateColOrder").textContent =
+        step.colOrder === null ? "—" : step.colOrder.length ? `[${step.colOrder.join(", ")}]` : "[] (Cycle)";
+
+      // 6. Render Matrix Grid
+      renderMatrixGrid(step, state.k);
+
+      // 7. Update Prev/Next button states
+      document.getElementById("btnPrev").disabled = state.currentStep === 0;
+      document.getElementById("btnNext").disabled = state.currentStep >= state.steps.length - 1;
+    }
+
+    // =========================================================================
+    // 7. PLAYBACK & INPUT HANDLERS
+    // =========================================================================
+    function pausePlayback() {
+      state.isPlaying = false;
+      if (state.timerId) {
+        clearInterval(state.timerId);
+        state.timerId = null;
+      }
+      document.getElementById("playPauseIcon").textContent = "▶";
+      document.getElementById("playPauseLabel").textContent = "Play";
+      document.getElementById("btnPlayPause").classList.replace("bg-amber-600", "bg-emerald-600");
+      document.getElementById("btnPlayPause").classList.replace("hover:bg-amber-500", "hover:bg-emerald-500");
+    }
+
+    function startPlayback() {
+      if (state.currentStep >= state.steps.length - 1) {
+        state.currentStep = 0;
+      }
+      state.isPlaying = true;
+      document.getElementById("playPauseIcon").textContent = "⏸";
+      document.getElementById("playPauseLabel").textContent = "Pause";
+      document.getElementById("btnPlayPause").classList.replace("bg-emerald-600", "bg-amber-600");
+      document.getElementById("btnPlayPause").classList.replace("hover:bg-emerald-500", "hover:bg-amber-500");
+
+      state.timerId = setInterval(() => {
+        if (state.currentStep < state.steps.length - 1) {
+          state.currentStep++;
+          renderCurrentStep();
+        } else {
+          pausePlayback();
+        }
+      }, state.speed);
+    }
+
+    function parseConditionsInput(rawStr, k, label) {
+      let parsed;
+      try {
+        parsed = JSON.parse(rawStr);
+      } catch {
+        throw new Error(`${label} must be valid JSON array of pairs, e.g. [[1,2],[3,2]]`);
+      }
+      if (!Array.isArray(parsed)) {
+        throw new Error(`${label} must be a list of [u, v] pairs.`);
+      }
+      for (const pair of parsed) {
+        if (!Array.isArray(pair) || pair.length !== 2) {
+          throw new Error(`Each item in ${label} must be a 2-element pair [u, v].`);
+        }
+        const [u, v] = pair;
+        if (!Number.isInteger(u) || !Number.isInteger(v) || u < 1 || u > k || v < 1 || v > k) {
+          throw new Error(`Node values in ${label} must be integers between 1 and k (${k}).`);
+        }
+      }
+      return parsed;
+    }
+
+    function loadSimulation(k, rowCond, colCond) {
+      pausePlayback();
+      state.k = k;
+      state.rowConditions = rowCond;
+      state.colConditions = colCond;
+      state.steps = generateExecutionSteps(k, rowCond, colCond);
+      state.currentStep = 0;
+      renderCurrentStep();
+    }
+
+    // Event Listeners
+    document.getElementById("applyBtn").addEventListener("click", () => {
+      const errorBox = document.getElementById("inputError");
+      errorBox.classList.add("hidden");
+
+      try {
+        const k = Number(document.getElementById("inputK").value);
+        if (!Number.isInteger(k) || k < 1 || k > 8) {
+          throw new Error("k must be an integer between 1 and 8.");
+        }
+        const rowCond = parseConditionsInput(document.getElementById("inputRowCond").value, k, "rowConditions");
+        const colCond = parseConditionsInput(document.getElementById("inputColCond").value, k, "colConditions");
+
+        // Clear active preset highlight
+        document.querySelectorAll(".preset-btn").forEach((b) => {
+          b.className = "preset-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition";
+        });
+
+        loadSimulation(k, rowCond, colCond);
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove("hidden");
+      }
+    });
+
+    document.querySelectorAll(".preset-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const presetKey = btn.dataset.preset;
+        const preset = PRESETS[presetKey];
+        if (!preset) return;
+
+        document.querySelectorAll(".preset-btn").forEach((b) => {
+          b.className = "preset-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition";
+        });
+        btn.className = "preset-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white shadow-sm transition";
+
+        document.getElementById("inputError").classList.add("hidden");
+        document.getElementById("inputK").value = preset.k;
+        document.getElementById("inputRowCond").value = JSON.stringify(preset.rowConditions);
+        document.getElementById("inputColCond").value = JSON.stringify(preset.colConditions);
+
+        loadSimulation(preset.k, preset.rowConditions, preset.colConditions);
+      });
+    });
+
+    document.getElementById("btnPlayPause").addEventListener("click", () => {
+      if (state.isPlaying) pausePlayback();
+      else startPlayback();
+    });
+
+    document.getElementById("btnNext").addEventListener("click", () => {
+      pausePlayback();
+      if (state.currentStep < state.steps.length - 1) {
+        state.currentStep++;
+        renderCurrentStep();
+      }
+    });
+
+    document.getElementById("btnPrev").addEventListener("click", () => {
+      pausePlayback();
+      if (state.currentStep > 0) {
+        state.currentStep--;
+        renderCurrentStep();
+      }
+    });
+
+    document.getElementById("btnReset").addEventListener("click", () => {
+      pausePlayback();
+      state.currentStep = 0;
+      renderCurrentStep();
+    });
+
+    document.getElementById("stepScrubber").addEventListener("input", (e) => {
+      pausePlayback();
+      state.currentStep = Number(e.target.value);
+      renderCurrentStep();
+    });
+
+    document.getElementById("speedSelect").addEventListener("change", (e) => {
+      state.speed = Number(e.target.value);
+      if (state.isPlaying) {
+        pausePlayback();
+        startPlayback();
+      }
+    });
+
+    // Copy Code Button (using safe textarea fallback for iframe compatibility)
+    document.getElementById("copyCodeBtn").addEventListener("click", () => {
+      const codeText = PYTHON_CODE_LINES.join("\n");
+      const textarea = document.createElement("textarea");
+      textarea.value = codeText;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        const label = document.getElementById("copyBtnText");
+        label.textContent = "Copied!";
+        setTimeout(() => { label.textContent = "Copy Code"; }, 1800);
+      } catch (err) {
+        console.error("Copy failed", err);
+      }
+      document.body.removeChild(textarea);
+    });
+
+    // Dark/Light Mode Toggle
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      document.documentElement.classList.toggle("dark");
+    });
+
+    // Keyboard shortcuts (Left/Right arrows, Spacebar)
+    document.addEventListener("keydown", (e) => {
+      if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        document.getElementById("btnNext").click();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        document.getElementById("btnPrev").click();
+      } else if (e.key === " ") {
+        e.preventDefault();
+        document.getElementById("btnPlayPause").click();
+      }
+    });
+
+    // Initialize on load
+    window.addEventListener("DOMContentLoaded", () => {
+      renderCodeTable();
+      loadSimulation(PRESETS.ex1.k, PRESETS.ex1.rowConditions, PRESETS.ex1.colConditions);
+    });
+  </script>
+</body>
+</html>
