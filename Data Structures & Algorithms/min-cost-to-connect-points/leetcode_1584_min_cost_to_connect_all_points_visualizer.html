@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeetCode 1584: Min Cost to Connect All Points — Algorithm Visualizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #121215;
+      color: #e4e4e7;
+      font-family: 'Inter', sans-serif;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #18181b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #3f3f46;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #52525b;
+    }
+    .code-line {
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+    @keyframes nodePulseAmber {
+      0%, 100% { filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.55)); }
+      50% { filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.95)); }
+    }
+    .active-node-glow {
+      animation: nodePulseAmber 1.6s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- Top Header & Presets -->
+  <header class="bg-[#18181c] border-b border-[#2b2b33] px-4 py-3 sticky top-0 z-30">
+    <div class="max-w-[1600px] mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <!-- Title & Badges -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center font-mono font-bold text-zinc-950 shadow-md shrink-0">
+          1584
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-base sm:text-lg font-bold text-zinc-100 tracking-tight">
+              Min Cost to Connect All Points
+            </h1>
+            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              Medium • Prim's Algorithm (MST)
+            </span>
+            <span class="px-2 py-0.5 text-[11px] font-mono rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700 hidden sm:inline-block">
+              O(N² log N) Time • O(N²) Space
+            </span>
+          </div>
+          <p class="text-xs text-zinc-400">
+            Connect all <code class="text-zinc-300">N</code> points with minimum total Manhattan distance <code class="text-emerald-300 font-mono">|x1 - x2| + |y1 - y2|</code>
+          </p>
+        </div>
+      </div>
+
+      <!-- Preset Buttons & Custom Modal Trigger -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-medium text-zinc-400 mr-1">Presets:</span>
+        <button onclick="loadPreset(0)" id="preset-0" class="preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border transition cursor-pointer">
+          Ex 1 (5 pts → 20)
+        </button>
+        <button onclick="loadPreset(1)" id="preset-1" class="preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border transition cursor-pointer">
+          Ex 2 (3 pts → 18)
+        </button>
+        <button onclick="loadPreset(2)" id="preset-2" class="preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border transition cursor-pointer">
+          Square + Center (4 pts → 4)
+        </button>
+        <button onclick="toggleCustomModal()" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition cursor-pointer flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+          </svg>
+          Custom Points
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Custom Points Modal -->
+  <div id="custom-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-[#1b1b20] border border-[#32323c] rounded-2xl max-w-xl w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold text-zinc-100">Custom 2D Points Editor</h3>
+        <button onclick="toggleCustomModal()" class="text-zinc-400 hover:text-zinc-200 p-1 rounded-lg cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <p class="text-xs text-zinc-400 mb-3">
+        Enter a JSON array of <code class="text-zinc-200">[x, y]</code> integer coordinates (2 to 8 points), or click directly on the interactive Cartesian plane below to add/remove points!
+      </p>
+
+      <!-- Mini Interactive Point Picker Canvas -->
+      <div class="mb-3 bg-[#121216] border border-[#2a2a34] rounded-xl p-2">
+        <div class="flex items-center justify-between text-[11px] text-zinc-400 px-1 mb-1.5">
+          <span>Click grid to place point (0..10) • Click existing dot to remove</span>
+          <button onclick="clearPickerPoints()" class="text-rose-400 hover:text-rose-300 font-mono cursor-pointer">Clear All</button>
+        </div>
+        <svg id="picker-svg" viewBox="0 0 440 200" class="w-full h-[175px] bg-[#0e0e12] rounded-lg cursor-crosshair select-none"></svg>
+      </div>
+
+      <textarea id="custom-points-input" rows="2"
+        class="w-full bg-zinc-950 border border-zinc-700 focus:border-amber-500 rounded-xl p-2.5 text-xs font-mono text-zinc-100 outline-none resize-none"
+        placeholder="[[0,0],[2,2],[3,10],[5,2],[7,0]]"></textarea>
+      <p id="custom-points-error" class="text-xs text-rose-400 mt-1.5 hidden"></p>
+
+      <div class="flex items-center justify-end gap-2 mt-4">
+        <button onclick="toggleCustomModal()" class="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition cursor-pointer">
+          Cancel
+        </button>
+        <button onclick="applyCustomPoints()" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 transition cursor-pointer">
+          Load & Visualize
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Playback Controls & Step Explanation Banner -->
+  <section class="bg-[#16161a] border-b border-[#2b2b33] px-4 py-3">
+    <div class="max-w-[1600px] mx-auto flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+      <!-- Playback Controls -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="resetVisualizer()" title="Reset (R)" class="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition cursor-pointer" aria-label="Reset">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+
+        <button onclick="stepBackward()" id="btn-prev" title="Step Backward (Left Arrow)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:pointer-events-none text-zinc-200 border border-zinc-700 text-xs font-medium flex items-center gap-1 transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Prev
+        </button>
+
+        <button onclick="togglePlay()" id="btn-play" title="Play / Pause (Space)" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer min-w-[92px] justify-center">
+          <svg id="icon-play" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path>
+          </svg>
+          <svg id="icon-pause" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M5.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75A.75.75 0 007.25 3h-1.5zM12.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75a.75.75 0 00-.75-.75h-1.5z"></path>
+          </svg>
+          <span id="play-label">Play</span>
+        </button>
+
+        <button onclick="stepForward()" id="btn-next" title="Step Forward (Right Arrow)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:pointer-events-none text-zinc-200 border border-zinc-700 text-xs font-medium flex items-center gap-1 transition cursor-pointer">
+          Next
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+
+        <!-- Step Counter -->
+        <div class="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300">
+          Step <span id="step-current" class="text-amber-400 font-bold">0</span> / <span id="step-total">0</span>
+        </div>
+
+        <!-- Speed Slider (0.5x to 3.0x) -->
+        <div class="flex items-center gap-2 ml-1 bg-zinc-900/90 border border-zinc-800 rounded-lg px-3 py-1">
+          <span class="text-[11px] text-zinc-400">Speed</span>
+          <input id="speed-slider" type="range" min="1" max="5" value="3" class="w-20 accent-amber-500 cursor-pointer" />
+          <span id="speed-label" class="text-[11px] font-mono text-zinc-300 w-8">1.0x</span>
+        </div>
+      </div>
+
+      <!-- Status Badge + Explanation -->
+      <div id="explanation-banner" class="flex-1 bg-[#1e1e26] border border-[#32323e] rounded-xl px-3.5 py-2 flex items-center gap-3 min-h-[44px]">
+        <span id="step-badge" class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold uppercase tracking-wider bg-sky-500/15 text-sky-400 border border-sky-500/30 shrink-0">
+          BUILD ADJ
+        </span>
+        <p id="explanation-text" class="text-xs sm:text-sm text-zinc-200 leading-snug">
+          Compute pairwise Manhattan distances between all points to build adjacency list <code class="font-mono text-amber-300">adj</code>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+    <!-- LEFT COLUMN (7 cols): 2D Cartesian Plane & Data Structures -->
+    <div class="lg:col-span-7 flex flex-col gap-4">
+
+      <!-- 2D Cartesian Plane Card -->
+      <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 sm:p-5 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-semibold text-zinc-100">2D Cartesian Plane & MST Builder</h2>
+            <span id="points-meta-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+              N = 5
+            </span>
+          </div>
+
+          <!-- Legend -->
+          <div class="flex flex-wrap items-center gap-2.5 text-[11px] text-zinc-400">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-zinc-700 border border-zinc-500 inline-block"></span> Unvisited</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500/35 border border-amber-400 inline-block"></span> Current i</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-500/35 border border-purple-400 inline-block"></span> Neighbor nei</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500/35 border border-emerald-400 inline-block"></span> In MST (visit)</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500/35 border border-rose-400 inline-block"></span> Stale Skip</span>
+          </div>
+        </div>
+
+        <!-- SVG Cartesian Plane -->
+        <div class="relative w-full bg-[#121216] border border-[#26262e] rounded-xl overflow-hidden select-none">
+          <svg id="plane-svg" viewBox="0 0 680 350" class="w-full h-[310px] sm:h-[350px] block"></svg>
+        </div>
+
+        <!-- Manhattan Distance Inspector Bar -->
+        <div class="mt-3 bg-[#121216] border border-[#2a2a32] rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-2 text-zinc-400">
+            <span class="font-semibold text-zinc-300">Manhattan Distance:</span>
+            <code class="font-mono text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+              dist = |x1 - x2| + |y1 - y2|
+            </code>
+          </div>
+          <div id="manhattan-live-calc" class="font-mono text-xs text-zinc-400">
+            Ready to compute pairwise distances...
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Structures Row: minH, visit, adj[i] -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        <!-- Priority Queue (minH) -->
+        <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 shadow-lg flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 font-mono">minH (Min-Heap)</h3>
+            </div>
+            <span id="heap-count" class="text-[11px] font-mono text-zinc-400">len = 0</span>
+          </div>
+          <p class="text-[10px] text-zinc-500 mb-2">Format: <code class="text-zinc-300">[cost, point]</code> • <span class="text-rose-400/90">Stale</span> = point already in <code class="text-zinc-300">visit</code></p>
+          <div id="heap-container" class="flex flex-wrap gap-1.5 min-h-[76px] max-h-[175px] overflow-y-auto items-start content-start p-2 rounded-xl bg-[#121216] border border-[#26262e]">
+            <!-- Heap pills -->
+          </div>
+        </div>
+
+        <!-- Visited Set (visit) -->
+        <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 shadow-lg flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 font-mono">visit = set()</h3>
+            </div>
+            <span id="visit-count" class="text-[11px] font-mono text-zinc-400">0 / 5</span>
+          </div>
+          <p class="text-[10px] text-zinc-500 mb-2">Stops when <code class="text-zinc-300">len(visit) == N</code> (all points connected)</p>
+          <div id="visit-container" class="flex flex-wrap gap-1.5 min-h-[76px] max-h-[175px] overflow-y-auto items-start content-start p-2 rounded-xl bg-[#121216] border border-[#26262e]">
+            <!-- Visited points -->
+          </div>
+        </div>
+
+        <!-- Adjacency List (adj) -->
+        <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 shadow-lg flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300 font-mono">adj[i]</h3>
+            </div>
+            <span class="text-[10px] font-mono text-zinc-500">[cost, node]</span>
+          </div>
+          <div id="adj-container" class="flex flex-col gap-1.5 min-h-[92px] max-h-[175px] overflow-y-auto p-2 rounded-xl bg-[#121216] border border-[#26262e] font-mono text-[11px]">
+            <!-- Adjacency rows -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN (5 cols): Local Variables & Exact 28-Line Python Code -->
+    <div class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- Local Variables Card -->
+      <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300">Local Variables</h3>
+          <span class="text-[11px] font-mono text-zinc-500">Python 3 Frame</span>
+        </div>
+        <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 font-mono text-center">
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">N</div>
+            <div id="var-N" class="text-sm font-bold text-zinc-200 mt-0.5">5</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">res</div>
+            <div id="var-res" class="text-sm font-bold text-emerald-400 mt-0.5">0</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">cost</div>
+            <div id="var-cost" class="text-sm font-bold text-amber-400 mt-0.5">—</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">i</div>
+            <div id="var-i" class="text-sm font-bold text-amber-300 mt-0.5">—</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">neiCost</div>
+            <div id="var-neiCost" class="text-sm font-bold text-purple-300 mt-0.5">—</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">nei</div>
+            <div id="var-nei" class="text-sm font-bold text-purple-400 mt-0.5">—</div>
+          </div>
+          <div class="bg-[#121216] border border-[#282830] rounded-xl p-2">
+            <div class="text-[10px] text-zinc-500">dist</div>
+            <div id="var-dist" class="text-sm font-bold text-sky-400 mt-0.5">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Python Code Panel (Exact 28 lines from screenshot) -->
+      <div class="bg-[#18181c] border border-[#2b2b33] rounded-2xl overflow-hidden shadow-xl">
+        <div class="bg-[#202026] border-b border-[#2e2e36] px-4 py-2.5 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+            </div>
+            <span class="text-xs font-mono text-zinc-300 ml-2">solution.py</span>
+          </div>
+          <span class="text-[11px] font-mono text-zinc-500">Prim's MST • 28 Lines</span>
+        </div>
+
+        <div id="code-container" class="py-2 font-mono text-[12px] sm:text-[12.5px] leading-[1.6] max-h-[520px] overflow-y-auto overflow-x-auto select-text">
+          <!-- 28 lines rendered via JS -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // =========================================================================
+    // 1. EXACT 28-LINE PYTHON SOURCE CODE (Matching NeetCode LeetCode 1584)
+    // =========================================================================
+    const PYTHON_LINES = [
+      { num: 1,  html: '<span class="text-sky-400">class</span> <span class="text-emerald-300">Solution</span>:' },
+      { num: 2,  html: '    <span class="text-sky-400">def</span> <span class="text-amber-200">minCostConnectPoints</span>(<span class="text-orange-300">self</span>, points: List[List[<span class="text-emerald-300">int</span>]]) -&gt; <span class="text-emerald-300">int</span>:' },
+      { num: 3,  html: '        N = <span class="text-amber-200">len</span>(points)' },
+      { num: 4,  html: '' },
+      { num: 5,  html: '        adj = { i:[] <span class="text-purple-400">for</span> i <span class="text-purple-400">in</span> <span class="text-amber-200">range</span>(N) } <span class="text-zinc-500"># i : list of [cost, node]</span>' },
+      { num: 6,  html: '' },
+      { num: 7,  html: '        <span class="text-purple-400">for</span> i <span class="text-purple-400">in</span> <span class="text-amber-200">range</span>(N):' },
+      { num: 8,  html: '            x1, y1 = points[i]' },
+      { num: 9,  html: '            <span class="text-purple-400">for</span> j <span class="text-purple-400">in</span> <span class="text-amber-200">range</span>(i + <span class="text-purple-300">1</span>, N):' },
+      { num: 10, html: '                x2, y2 = points[j]' },
+      { num: 11, html: '                dist = <span class="text-amber-200">abs</span>(x1 - x2) + <span class="text-amber-200">abs</span>(y1 - y2)' },
+      { num: 12, html: '                adj[i].append([dist, j])' },
+      { num: 13, html: '                adj[j].append([dist, i])' },
+      { num: 14, html: '' },
+      { num: 15, html: '        <span class="text-zinc-500"># Prim\'s</span>' },
+      { num: 16, html: '        res = <span class="text-purple-300">0</span>' },
+      { num: 17, html: '        visit = <span class="text-amber-200">set</span>()' },
+      { num: 18, html: '        minH = [[<span class="text-purple-300">0</span>, <span class="text-purple-300">0</span>]] <span class="text-zinc-500"># [cost, point]</span>' },
+      { num: 19, html: '        <span class="text-purple-400">while</span> <span class="text-amber-200">len</span>(visit) &lt; N:' },
+      { num: 20, html: '            cost, i = heapq.heappop(minH)' },
+      { num: 21, html: '            <span class="text-purple-400">if</span> i <span class="text-purple-400">in</span> visit:' },
+      { num: 22, html: '                <span class="text-purple-400">continue</span>' },
+      { num: 23, html: '            res += cost' },
+      { num: 24, html: '            visit.add(i)' },
+      { num: 25, html: '            <span class="text-purple-400">for</span> neiCost, nei <span class="text-purple-400">in</span> adj[i]:' },
+      { num: 26, html: '                <span class="text-purple-400">if</span> nei <span class="text-purple-400">not in</span> visit:' },
+      { num: 27, html: '                    heapq.heappush(minH, [neiCost, nei])' },
+      { num: 28, html: '        <span class="text-purple-400">return</span> res' }
+    ];
+
+    // =========================================================================
+    // 2. PRESETS & GLOBAL STATE
+    // =========================================================================
+    const PRESETS = [
+      {
+        name: 'Ex 1 (5 pts → 20)',
+        points: [[0, 0], [2, 2], [3, 10], [5, 2], [7, 0]]
+      },
+      {
+        name: 'Ex 2 (3 pts → 18)',
+        points: [[3, 12], [-2, 5], [-4, 1]]
+      },
+      {
+        name: 'Square + Center (4 pts → 4)',
+        points: [[0, 0], [1, 1], [1, 0], [0, 1]]
+      }
+    ];
+
+    let currentPoints = [];
+    let activePresetIndex = 0;
+    let steps = [];
+    let currentStepIdx = 0;
+    let isPlaying = false;
+    let playTimer = null;
+    let pickerPoints = [];
+
+    const SPEED_MAP = {
+      1: { label: '0.5x', ms: 1550 },
+      2: { label: '0.75x', ms: 1050 },
+      3: { label: '1.0x', ms: 680 },
+      4: { label: '1.75x', ms: 360 },
+      5: { label: '3.0x', ms: 190 }
+    };
+
+    // =========================================================================
+    // 3. PRIM'S ALGORITHM TRACE GENERATOR (Records complete execution trace)
+    // =========================================================================
+    function generateTrace(points) {
+      const N = points.length;
+      const recordedSteps = [];
+
+      const adj = {};
+      for (let i = 0; i < N; i++) adj[i] = [];
+
+      const cloneAdj = () => {
+        const copy = {};
+        for (let k = 0; k < N; k++) copy[k] = adj[k].map(e => [...e]);
+        return copy;
+      };
+
+      // Step 0: Lines 3 & 5 (Initialize N and empty adj)
+      recordedSteps.push({
+        lines: [3, 5],
+        lineTheme: 'amber',
+        badge: 'INIT ADJ',
+        badgeColor: 'sky',
+        explanation: `<code class="font-mono text-zinc-200">N = ${N}</code> points. Initialize empty adjacency lists <code class="font-mono text-amber-300">adj = { i: [] for i in range(${N}) }</code>.`,
+        vars: { N, res: 0, cost: '—', i: '—', neiCost: '—', nei: '—', dist: '—' },
+        adj: cloneAdj(),
+        minH: [],
+        visit: [],
+        mstEdges: [],
+        activeNode: null,
+        neighborNode: null,
+        staleNode: null,
+        lPath: null
+      });
+
+      // Phase 1: Build complete graph with Manhattan distances (Lines 7-13)
+      for (let i = 0; i < N; i++) {
+        const [x1, y1] = points[i];
+        for (let j = i + 1; j < N; j++) {
+          const [x2, y2] = points[j];
+          const dist = Math.abs(x1 - x2) + Math.abs(y1 - y2);
+          adj[i].push([dist, j]);
+          adj[j].push([dist, i]);
+
+          recordedSteps.push({
+            lines: [7, 8, 9, 10, 11, 12, 13],
+            lineTheme: 'amber',
+            badge: 'PAIRWISE DIST',
+            badgeColor: 'sky',
+            explanation: `Pair <code class="font-mono text-amber-300">i=${i} (${x1},${y1})</code> & <code class="font-mono text-purple-300">j=${j} (${x2},${y2})</code>: <code class="font-mono text-sky-300">dist = |${x1}-${x2}| + |${y1}-${y2}| = ${dist}</code>. Append to <code class="font-mono">adj[${i}]</code> & <code class="font-mono">adj[${j}]</code>.`,
+            vars: { N, res: 0, cost: '—', i, neiCost: '—', nei: j, dist },
+            adj: cloneAdj(),
+            minH: [],
+            visit: [],
+            mstEdges: [],
+            activeNode: i,
+            neighborNode: j,
+            staleNode: null,
+            lPath: { from: i, to: j, dist, dx: Math.abs(x1 - x2), dy: Math.abs(y1 - y2), color: 'sky' }
+          });
+        }
+      }
+
+      // Phase 2: Prim's MST (Lines 16-28)
+      let res = 0;
+      const visit = new Set();
+      // Heap elements track [cost, point, fromParent] so we can draw the exact MST edge when popped
+      let minH = [[0, 0, null]];
+      const mstEdges = [];
+
+      const cloneHeap = () =>
+        [...minH]
+          .sort((a, b) => (a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]))
+          .map(item => [...item]);
+
+      recordedSteps.push({
+        lines: [16, 17, 18],
+        lineTheme: 'amber',
+        badge: 'INIT PRIM',
+        badgeColor: 'amber',
+        explanation: `Start Prim's MST: <code class="font-mono text-emerald-300">res = 0</code>, <code class="font-mono text-emerald-300">visit = set()</code>, and push seed <code class="font-mono text-sky-300">[0, 0]</code> (cost 0 to connect point 0) into <code class="font-mono">minH</code>.`,
+        vars: { N, res, cost: '—', i: '—', neiCost: '—', nei: '—', dist: '—' },
+        adj: cloneAdj(),
+        minH: cloneHeap(),
+        visit: [],
+        mstEdges: [],
+        activeNode: 0,
+        neighborNode: null,
+        staleNode: null,
+        lPath: null
+      });
+
+      while (visit.size < N) {
+        minH.sort((a, b) => (a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]));
+        const [cost, i, parentNode] = minH.shift();
+
+        // Line 19-20: heappop
+        recordedSteps.push({
+          lines: [19, 20],
+          lineTheme: 'amber',
+          badge: 'HEAPPOP',
+          badgeColor: 'amber',
+          explanation: `<code class="font-mono">len(visit) (${visit.size}) &lt; ${N}</code>. Pop minimum edge <code class="font-mono text-amber-300">[${cost}, ${i}]</code> from <code class="font-mono">minH</code> → <code class="font-mono">cost = ${cost}, i = ${i}</code>.`,
+          vars: { N, res, cost, i, neiCost: '—', nei: '—', dist: '—' },
+          adj: cloneAdj(),
+          minH: cloneHeap(),
+          visit: Array.from(visit),
+          mstEdges: mstEdges.map(e => ({ ...e })),
+          activeNode: i,
+          neighborNode: parentNode,
+          staleNode: null,
+          lPath: parentNode !== null
+            ? {
+                from: parentNode,
+                to: i,
+                dist: cost,
+                dx: Math.abs(points[parentNode][0] - points[i][0]),
+                dy: Math.abs(points[parentNode][1] - points[i][1]),
+                color: 'amber'
+              }
+            : null
+        });
+
+        // Line 21-22: Check if i in visit (Stale edge check!)
+        if (visit.has(i)) {
+          recordedSteps.push({
+            lines: [21, 22],
+            lineTheme: 'rose',
+            badge: 'SKIP STALE',
+            badgeColor: 'rose',
+            explanation: `Point <code class="font-mono text-rose-400 font-bold">${i}</code> is already in <code class="font-mono text-emerald-300">visit</code>! Adding this edge would form a cycle — skip via <code class="font-mono">continue</code>.`,
+            vars: { N, res, cost, i, neiCost: '—', nei: '—', dist: '—' },
+            adj: cloneAdj(),
+            minH: cloneHeap(),
+            visit: Array.from(visit),
+            mstEdges: mstEdges.map(e => ({ ...e })),
+            activeNode: null,
+            neighborNode: null,
+            staleNode: i,
+            lPath: parentNode !== null
+              ? {
+                  from: parentNode,
+                  to: i,
+                  dist: cost,
+                  dx: Math.abs(points[parentNode][0] - points[i][0]),
+                  dy: Math.abs(points[parentNode][1] - points[i][1]),
+                  color: 'rose'
+                }
+              : null
+          });
+          continue;
+        }
+
+        // Line 23-24: Commit edge to MST (res += cost, visit.add(i))
+        res += cost;
+        visit.add(i);
+        if (parentNode !== null) {
+          mstEdges.push({ from: parentNode, to: i, cost });
+        }
+
+        recordedSteps.push({
+          lines: [23, 24],
+          lineTheme: 'emerald',
+          badge: 'ADD TO MST',
+          badgeColor: 'emerald',
+          explanation: parentNode !== null
+            ? `Connect point <code class="font-mono text-emerald-300">${i}</code> via edge <code class="font-mono text-emerald-300">(${parentNode} — ${i})</code> of cost <code class="font-mono text-emerald-300">${cost}</code>. Total <code class="font-mono text-emerald-300">res = ${res}</code>, <code class="font-mono">len(visit) = ${visit.size}/${N}</code>.`
+            : `Add starting point <code class="font-mono text-emerald-300">0</code> to <code class="font-mono">visit</code> with <code class="font-mono">cost = 0</code>. Total <code class="font-mono text-emerald-300">res = 0</code>.`,
+          vars: { N, res, cost, i, neiCost: '—', nei: '—', dist: '—' },
+          adj: cloneAdj(),
+          minH: cloneHeap(),
+          visit: Array.from(visit),
+          mstEdges: mstEdges.map(e => ({ ...e })),
+          activeNode: i,
+          neighborNode: null,
+          staleNode: null,
+          lPath: null
+        });
+
+        // If visit.size == N, the while loop condition len(visit) < N will terminate next,
+        // though in the Python code lines 25-27 still iterate over adj[i] before checking while.
+        // We accurately execute lines 25-27 just like Python!
+        for (const [neiCost, nei] of adj[i]) {
+          if (!visit.has(nei)) {
+            minH.push([neiCost, nei, i]);
+            recordedSteps.push({
+              lines: [25, 26, 27],
+              lineTheme: 'amber',
+              badge: 'HEAPPUSH',
+              badgeColor: 'purple',
+              explanation: `Neighbor <code class="font-mono text-purple-300">nei = ${nei}</code> (cost <code class="font-mono text-sky-300">${neiCost}</code>) not in <code class="font-mono">visit</code> → push <code class="font-mono text-sky-300">[${neiCost}, ${nei}]</code> to <code class="font-mono">minH</code>.`,
+              vars: { N, res, cost, i, neiCost, nei, dist: '—' },
+              adj: cloneAdj(),
+              minH: cloneHeap(),
+              visit: Array.from(visit),
+              mstEdges: mstEdges.map(e => ({ ...e })),
+              activeNode: i,
+              neighborNode: nei,
+              staleNode: null,
+              lPath: {
+                from: i,
+                to: nei,
+                dist: neiCost,
+                dx: Math.abs(points[i][0] - points[nei][0]),
+                dy: Math.abs(points[i][1] - points[nei][1]),
+                color: 'purple'
+              }
+            });
+          } else {
+            recordedSteps.push({
+              lines: [25, 26],
+              lineTheme: 'amber',
+              badge: 'IGNORE VISITED',
+              badgeColor: 'zinc',
+              explanation: `Neighbor <code class="font-mono text-emerald-300">nei = ${nei}</code> is already in <code class="font-mono">visit</code> — skip pushing.`,
+              vars: { N, res, cost, i, neiCost, nei, dist: '—' },
+              adj: cloneAdj(),
+              minH: cloneHeap(),
+              visit: Array.from(visit),
+              mstEdges: mstEdges.map(e => ({ ...e })),
+              activeNode: i,
+              neighborNode: nei,
+              staleNode: null,
+              lPath: null
+            });
+          }
+        }
+      }
+
+      // Line 28: return res
+      recordedSteps.push({
+        lines: [19, 28],
+        lineTheme: 'emerald',
+        badge: 'RETURN MST',
+        badgeColor: 'emerald',
+        explanation: `<code class="font-mono">len(visit) == ${N}</code> — all ${N} points connected! Return Minimum Spanning Tree total cost <code class="font-mono text-emerald-300 font-bold">${res}</code>.`,
+        vars: { N, res, cost: '—', i: '—', neiCost: '—', nei: '—', dist: '—' },
+        adj: cloneAdj(),
+        minH: cloneHeap(),
+        visit: Array.from(visit),
+        mstEdges: mstEdges.map(e => ({ ...e })),
+        activeNode: null,
+        neighborNode: null,
+        staleNode: null,
+        lPath: null,
+        isComplete: true
+      });
+
+      return recordedSteps;
+    }
+
+    // =========================================================================
+    // 4. 2D CARTESIAN PLANE & CODE RENDERING
+    // =========================================================================
+    function renderCodePanel() {
+      const container = document.getElementById('code-container');
+      container.innerHTML = PYTHON_LINES.map(line => `
+        <div id="code-line-${line.num}" class="code-line flex items-start px-3 py-0.5 border-l-2 border-transparent">
+          <span class="w-7 text-right pr-3 text-zinc-600 select-none shrink-0 text-xs leading-[1.6]">${line.num}</span>
+          <pre class="whitespace-pre text-zinc-200">${line.html || ' '}</pre>
+        </div>
+      `).join('');
+    }
+
+    function computeCoordinateMapper(points, width, height, pad) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const [x, y] of points) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+
+      // Ensure at least a 2-unit span & include 0 if close
+      if (minX > 0 && minX <= 3) minX = 0;
+      if (minY > 0 && minY <= 3) minY = 0;
+
+      const spanX = Math.max(2, maxX - minX);
+      const spanY = Math.max(2, maxY - minY);
+
+      const padX = Math.max(1, Math.ceil(spanX * 0.14));
+      const padY = Math.max(1, Math.ceil(spanY * 0.16));
+
+      const domMinX = minX - padX;
+      const domMaxX = maxX + padX;
+      const domMinY = minY - padY;
+      const domMaxY = maxY + padY;
+
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+
+      const toSVGX = (x) => pad.left + ((x - domMinX) / (domMaxX - domMinX)) * plotW;
+      const toSVGY = (y) => height - pad.bottom - ((y - domMinY) / (domMaxY - domMinY)) * plotH;
+
+      return { domMinX, domMaxX, domMinY, domMaxY, toSVGX, toSVGY };
+    }
+
+    function renderCartesianPlane(step) {
+      const svg = document.getElementById('plane-svg');
+      const W = 680, H = 350;
+      const pad = { left: 48, right: 32, top: 28, bottom: 38 };
+      const { domMinX, domMaxX, domMinY, domMaxY, toSVGX, toSVGY } = computeCoordinateMapper(currentPoints, W, H, pad);
+
+      let markup = '';
+
+      // 1. Grid Lines & Axis Ticks
+      const xRange = domMaxX - domMinX;
+      const yRange = domMaxY - domMinY;
+      const xStep = xRange <= 14 ? 1 : Math.ceil(xRange / 12);
+      const yStep = yRange <= 12 ? 1 : Math.ceil(yRange / 10);
+
+      for (let gx = Math.ceil(domMinX); gx <= Math.floor(domMaxX); gx += xStep) {
+        const sx = toSVGX(gx);
+        const isZero = gx === 0;
+        markup += `
+          <line x1="${sx}" y1="${pad.top}" x2="${sx}" y2="${H - pad.bottom}"
+            stroke="${isZero ? '#3f3f46' : '#1f1f26'}" stroke-width="${isZero ? '1.5' : '1'}" />
+          <text x="${sx}" y="${H - pad.bottom + 16}" text-anchor="middle"
+            fill="${isZero ? '#a1a1aa' : '#52525b'}" font-size="10" font-family="JetBrains Mono, monospace">${gx}</text>
+        `;
+      }
+
+      for (let gy = Math.ceil(domMinY); gy <= Math.floor(domMaxY); gy += yStep) {
+        const sy = toSVGY(gy);
+        const isZero = gy === 0;
+        markup += `
+          <line x1="${pad.left}" y1="${sy}" x2="${W - pad.right}" y2="${sy}"
+            stroke="${isZero ? '#3f3f46' : '#1f1f26'}" stroke-width="${isZero ? '1.5' : '1'}" />
+          <text x="${pad.left - 10}" y="${sy + 3.5}" text-anchor="end"
+            fill="${isZero ? '#a1a1aa' : '#52525b'}" font-size="10" font-family="JetBrains Mono, monospace">${gy}</text>
+        `;
+      }
+
+      // 2. Candidate edges currently sitting in minH (faint dashed sky lines)
+      const mstSet = new Set(step.mstEdges.map(e => [e.from, e.to].sort().join('-')));
+      const drawnCandidateSet = new Set();
+
+      for (const [cCost, cTo, cFrom] of step.minH) {
+        if (cFrom === null || cFrom === undefined) continue;
+        const pairKey = [cFrom, cTo].sort().join('-');
+        if (mstSet.has(pairKey) || drawnCandidateSet.has(pairKey)) continue;
+        drawnCandidateSet.add(pairKey);
+
+        const p1 = currentPoints[cFrom];
+        const p2 = currentPoints[cTo];
+        markup += `
+          <line x1="${toSVGX(p1[0])}" y1="${toSVGY(p1[1])}" x2="${toSVGX(p2[0])}" y2="${toSVGY(p2[1])}"
+            stroke="#38bdf8" stroke-opacity="0.22" stroke-width="1.5" stroke-dasharray="4 4" />
+        `;
+      }
+
+      // 3. Committed MST Edges (Glowing emerald solid lines + cost pills)
+      for (const edge of step.mstEdges) {
+        const p1 = currentPoints[edge.from];
+        const p2 = currentPoints[edge.to];
+        const x1 = toSVGX(p1[0]), y1 = toSVGY(p1[1]);
+        const x2 = toSVGX(p2[0]), y2 = toSVGY(p2[1]);
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2;
+
+        markup += `
+          <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+            stroke="#10b981" stroke-width="3.2" stroke-linecap="round" />
+          <g transform="translate(${mx}, ${my})">
+            <rect x="-14" y="-10" width="28" height="20" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1.4" />
+            <text x="0" y="4" text-anchor="middle" fill="#a7f3d0" font-size="11" font-family="JetBrains Mono, monospace" font-weight="700">${edge.cost}</text>
+          </g>
+        `;
+      }
+
+      // 4. Active Manhattan L-Path Bracket & Direct Preview Line
+      if (step.lPath) {
+        const { from, to, dist, dx, dy, color } = step.lPath;
+        const p1 = currentPoints[from];
+        const p2 = currentPoints[to];
+        const x1 = toSVGX(p1[0]), y1 = toSVGY(p1[1]);
+        const x2 = toSVGX(p2[0]), y2 = toSVGY(p2[1]);
+
+        const palette = {
+          sky:    { stroke: '#38bdf8', bg: '#0c4a6e', text: '#e0f2fe' },
+          amber:  { stroke: '#fbbf24', bg: '#451a03', text: '#fef3c7' },
+          purple: { stroke: '#c084fc', bg: '#3b0764', text: '#f3e8ff' },
+          rose:   { stroke: '#fb7185', bg: '#4c0519', text: '#ffe4e6' }
+        };
+        const pal = palette[color] || palette.sky;
+
+        // Orthogonal L-bracket corner at (x2, y1)
+        const cornerX = x2;
+        const cornerY = y1;
+
+        markup += `
+          <!-- Manhattan L-bracket -->
+          <polyline points="${x1},${y1} ${cornerX},${cornerY} ${x2},${y2}"
+            fill="none" stroke="${pal.stroke}" stroke-opacity="0.65" stroke-width="2" stroke-dasharray="5 3" />
+          <!-- Direct connection highlight -->
+          <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+            stroke="${pal.stroke}" stroke-width="2.6" />
+        `;
+
+        // Horizontal delta label if dx > 0 and dy > 0
+        if (dx > 0 && dy > 0) {
+          markup += `
+            <text x="${(x1 + cornerX) / 2}" y="${cornerY - 6}" text-anchor="middle"
+              fill="${pal.stroke}" font-size="10" font-family="JetBrains Mono, monospace" font-weight="600">Δx=${dx}</text>
+            <text x="${cornerX + 8}" y="${(cornerY + y2) / 2 + 3}" text-anchor="start"
+              fill="${pal.stroke}" font-size="10" font-family="JetBrains Mono, monospace" font-weight="600">Δy=${dy}</text>
+          `;
+        }
+
+        // Midpoint total Manhattan distance badge
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2;
+        markup += `
+          <g transform="translate(${mx}, ${my})">
+            <rect x="-16" y="-11" width="32" height="22" rx="6" fill="${pal.bg}" stroke="${pal.stroke}" stroke-width="1.6" />
+            <text x="0" y="4" text-anchor="middle" fill="${pal.text}" font-size="11" font-family="JetBrains Mono, monospace" font-weight="700">${dist}</text>
+          </g>
+        `;
+      }
+
+      // 5. Plot Points (0 .. N-1)
+      const visitSet = new Set(step.visit);
+
+      currentPoints.forEach(([px, py], idx) => {
+        const sx = toSVGX(px);
+        const sy = toSVGY(py);
+
+        const isActive = step.activeNode === idx;
+        const isNeighbor = step.neighborNode === idx;
+        const isStale = step.staleNode === idx;
+        const isVisited = visitSet.has(idx);
+
+        let fill = '#18181b';
+        let stroke = '#71717a';
+        let strokeW = '2.2';
+        let textFill = '#f4f4f5';
+        let extraClass = '';
+
+        if (isStale) {
+          fill = '#4c0519';
+          stroke = '#fb7185';
+          strokeW = '3';
+          textFill = '#ffe4e6';
+        } else if (isActive) {
+          fill = '#451a03';
+          stroke = '#fbbf24';
+          strokeW = '3';
+          textFill = '#fef3c7';
+          extraClass = 'active-node-glow';
+        } else if (isNeighbor) {
+          fill = '#3b0764';
+          stroke = '#c084fc';
+          strokeW = '2.8';
+          textFill = '#f3e8ff';
+        } else if (isVisited) {
+          fill = '#064e3b';
+          stroke = '#34d399';
+          strokeW = '2.6';
+          textFill = '#d1fae5';
+        }
+
+        // Keep coordinate tag above or below node depending on vertical position
+        const tagY = sy < 52 ? 31 : -24;
+
+        markup += `
+          <g class="${extraClass}" transform="translate(${sx}, ${sy})">
+            <circle r="16" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" />
+            <text x="0" y="4.5" text-anchor="middle" fill="${textFill}" font-size="12.5" font-family="JetBrains Mono, monospace" font-weight="700">${idx}</text>
+            <rect x="-25" y="${tagY - 10}" width="50" height="15" rx="4" fill="#121216" fill-opacity="0.9" stroke="#27272a" stroke-width="1" />
+            <text x="0" y="${tagY + 1}" text-anchor="middle" fill="#a1a1aa" font-size="9.5" font-family="JetBrains Mono, monospace">(${px},${py})</text>
+          </g>
+        `;
+      });
+
+      svg.innerHTML = markup;
+    }
+
+    // =========================================================================
+    // 5. UI SYNCHRONIZATION
+    // =========================================================================
+    function updateUI() {
+      const step = steps[currentStepIdx];
+      if (!step) return;
+
+      const N = currentPoints.length;
+      document.getElementById('points-meta-badge').textContent = `N = ${N}`;
+
+      // 1. Step Counter & Buttons
+      document.getElementById('step-current').textContent = currentStepIdx;
+      document.getElementById('step-total').textContent = steps.length - 1;
+      document.getElementById('btn-prev').disabled = currentStepIdx === 0;
+      document.getElementById('btn-next').disabled = currentStepIdx === steps.length - 1;
+
+      // 2. Status Badge & Explanation
+      const badgeEl = document.getElementById('step-badge');
+      badgeEl.textContent = step.badge;
+      const badgeStyles = {
+        sky: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+        amber: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+        emerald: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+        purple: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+        rose: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+        zinc: 'bg-zinc-700/40 text-zinc-300 border-zinc-600/40'
+      };
+      badgeEl.className = `px-2 py-0.5 rounded text-[11px] font-mono font-semibold uppercase tracking-wider border shrink-0 ${badgeStyles[step.badgeColor] || badgeStyles.sky}`;
+      document.getElementById('explanation-text').innerHTML = step.explanation;
+
+      // 3. Code Line Highlighting & Smooth Auto-Scroll
+      let firstActiveLineEl = null;
+      PYTHON_LINES.forEach(line => {
+        const el = document.getElementById(`code-line-${line.num}`);
+        if (!el) return;
+        el.classList.remove(
+          'bg-amber-500/15', 'border-amber-400',
+          'bg-emerald-500/15', 'border-emerald-400',
+          'bg-rose-500/15', 'border-rose-400',
+          'border-transparent'
+        );
+
+        if (step.lines.includes(line.num)) {
+          if (!firstActiveLineEl) firstActiveLineEl = el;
+          if (step.lineTheme === 'emerald') {
+            el.classList.add('bg-emerald-500/15', 'border-emerald-400');
+          } else if (step.lineTheme === 'rose') {
+            el.classList.add('bg-rose-500/15', 'border-rose-400');
+          } else {
+            el.classList.add('bg-amber-500/15', 'border-amber-400');
+          }
+        } else {
+          el.classList.add('border-transparent');
+        }
+      });
+
+      if (firstActiveLineEl) {
+        firstActiveLineEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+
+      // 4. Local Variables
+      document.getElementById('var-N').textContent = step.vars.N;
+      document.getElementById('var-res').textContent = step.vars.res;
+      document.getElementById('var-cost').textContent = step.vars.cost;
+      document.getElementById('var-i').textContent = step.vars.i;
+      document.getElementById('var-neiCost').textContent = step.vars.neiCost;
+      document.getElementById('var-nei').textContent = step.vars.nei;
+      document.getElementById('var-dist').textContent = step.vars.dist;
+
+      // 5. Manhattan Distance Live Formula
+      const manhattanEl = document.getElementById('manhattan-live-calc');
+      if (step.lPath) {
+        const { from, to, dist, dx, dy } = step.lPath;
+        const [x1, y1] = currentPoints[from];
+        const [x2, y2] = currentPoints[to];
+        manhattanEl.innerHTML = `<span class="text-zinc-300">pts[${from}]→pts[${to}]:</span> <span class="text-sky-300">|${x1}-${x2}| + |${y1}-${y2}| = ${dx} + ${dy} = <strong class="text-amber-300">${dist}</strong></span>`;
+      } else if (step.isComplete) {
+        manhattanEl.innerHTML = `<span class="text-emerald-400 font-semibold">MST Complete! Minimum Total Cost = ${step.vars.res}</span>`;
+      } else {
+        manhattanEl.innerHTML = `<span class="text-zinc-500">Select Next / Play to inspect distances...</span>`;
+      }
+
+      // 6. minH Priority Queue (highlighting MIN and stale entries!)
+      const visitSet = new Set(step.visit);
+      const heapContainer = document.getElementById('heap-container');
+      document.getElementById('heap-count').textContent = `len = ${step.minH.length}`;
+
+      if (step.minH.length === 0) {
+        heapContainer.innerHTML = '<span class="text-xs font-mono text-zinc-600 italic">[] (empty)</span>';
+      } else {
+        heapContainer.innerHTML = step.minH.map(([hCost, hPt], idx) => {
+          const isTop = idx === 0;
+          const isStale = visitSet.has(hPt);
+          let pillStyle = 'bg-zinc-900 border-zinc-700 text-zinc-300';
+
+          if (isTop && isStale) {
+            pillStyle = 'bg-rose-500/20 border-rose-400 text-rose-200 font-semibold';
+          } else if (isTop) {
+            pillStyle = 'bg-sky-500/20 border-sky-400 text-sky-200 font-semibold';
+          } else if (isStale) {
+            pillStyle = 'bg-rose-950/40 border-rose-500/40 text-rose-300/80 line-through';
+          }
+
+          return `
+            <div class="px-2 py-1 rounded-lg font-mono text-xs border flex items-center gap-1 ${pillStyle}"
+                 title="${isStale ? `Point ${hPt} is already in visit — will be skipped when popped` : `Cost ${hCost} to connect point ${hPt}`}">
+              ${isTop ? `<span class="text-[9px] uppercase font-bold ${isStale ? 'text-rose-400' : 'text-sky-400'}">MIN</span>` : ''}
+              <span>[${hCost}, ${hPt}]</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 7. visit set
+      const visitContainer = document.getElementById('visit-container');
+      document.getElementById('visit-count').textContent = `${step.visit.length} / ${N}`;
+      if (step.visit.length === 0) {
+        visitContainer.innerHTML = '<span class="text-xs font-mono text-zinc-600 italic">set()</span>';
+      } else {
+        visitContainer.innerHTML = step.visit.map(pt => `
+          <span class="px-2 py-1 rounded-lg font-mono text-xs bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-semibold">
+            ${pt}
+          </span>
+        `).join('');
+      }
+
+      // 8. adj[i] Adjacency List
+      const adjContainer = document.getElementById('adj-container');
+      let adjHTML = '';
+      for (let u = 0; u < N; u++) {
+        const list = step.adj[u] || [];
+        const isCurrentU = step.activeNode === u;
+        adjHTML += `
+          <div class="px-2 py-1 rounded-lg flex items-center justify-between gap-2 ${
+            isCurrentU ? 'bg-amber-500/15 border border-amber-500/40 text-amber-200' : 'text-zinc-300'
+          }">
+            <span class="font-bold text-amber-400 shrink-0">${u}:</span>
+            <span class="truncate text-zinc-300">[${list.map(([d, v]) => `[${d},${v}]`).join(', ')}]</span>
+          </div>
+        `;
+      }
+      adjContainer.innerHTML = adjHTML;
+
+      // 9. Render 2D Cartesian Plane
+      renderCartesianPlane(step);
+    }
+
+    // =========================================================================
+    // 6. INTERACTIVE CUSTOM POINT PICKER (INSIDE MODAL)
+    // =========================================================================
+    function renderPickerSVG() {
+      const svg = document.getElementById('picker-svg');
+      const W = 440, H = 200;
+      const padL = 28, padR = 16, padT = 14, padB = 22;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+
+      const toX = (gx) => padL + (gx / 10) * plotW;
+      const toY = (gy) => H - padB - (gy / 10) * plotH;
+
+      let markup = '';
+      for (let g = 0; g <= 10; g++) {
+        const x = toX(g);
+        const y = toY(g);
+        markup += `
+          <line x1="${x}" y1="${padT}" x2="${x}" y2="${H - padB}" stroke="#1e1e26" stroke-width="1" />
+          <line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#1e1e26" stroke-width="1" />
+        `;
+        if (g % 2 === 0) {
+          markup += `
+            <text x="${x}" y="${H - 7}" text-anchor="middle" fill="#71717a" font-size="9" font-family="JetBrains Mono, monospace">${g}</text>
+            <text x="${padL - 7}" y="${y + 3}" text-anchor="end" fill="#71717a" font-size="9" font-family="JetBrains Mono, monospace">${g}</text>
+          `;
+        }
+      }
+
+      pickerPoints.forEach(([px, py], idx) => {
+        const sx = toX(px);
+        const sy = toY(py);
+        markup += `
+          <g class="cursor-pointer" data-picker-idx="${idx}" transform="translate(${sx}, ${sy})">
+            <circle r="10" fill="#064e3b" stroke="#34d399" stroke-width="2" />
+            <text x="0" y="3.5" text-anchor="middle" fill="#d1fae5" font-size="10" font-family="JetBrains Mono, monospace" font-weight="700">${idx}</text>
+          </g>
+        `;
+      });
+
+      svg.innerHTML = markup;
+    }
+
+    document.getElementById('picker-svg').addEventListener('click', (e) => {
+      const existingDot = e.target.closest('[data-picker-idx]');
+      if (existingDot) {
+        const idx = Number(existingDot.getAttribute('data-picker-idx'));
+        pickerPoints.splice(idx, 1);
+        document.getElementById('custom-points-input').value = JSON.stringify(pickerPoints);
+        renderPickerSVG();
+        return;
+      }
+
+      if (pickerPoints.length >= 8) return;
+
+      const svg = document.getElementById('picker-svg');
+      const rect = svg.getBoundingClientRect();
+      const svgX = ((e.clientX - rect.left) / rect.width) * 440;
+      const svgY = ((e.clientY - rect.top) / rect.height) * 200;
+
+      const padL = 28, padR = 16, padT = 14, padB = 22;
+      const gx = Math.max(0, Math.min(10, Math.round(((svgX - padL) / (440 - padL - padR)) * 10)));
+      const gy = Math.max(0, Math.min(10, Math.round(((200 - padB - svgY) / (200 - padT - padB)) * 10)));
+
+      if (!pickerPoints.some(([px, py]) => px === gx && py === gy)) {
+        pickerPoints.push([gx, gy]);
+        document.getElementById('custom-points-input').value = JSON.stringify(pickerPoints);
+        renderPickerSVG();
+      }
+    });
+
+    function clearPickerPoints() {
+      pickerPoints = [];
+      document.getElementById('custom-points-input').value = '[]';
+      renderPickerSVG();
+    }
+
+    // =========================================================================
+    // 7. PLAYBACK, PRESETS & CUSTOM MODAL CONTROLS
+    // =========================================================================
+    function updatePresetButtons() {
+      [0, 1, 2].forEach(idx => {
+        const btn = document.getElementById(`preset-${idx}`);
+        if (idx === activePresetIndex) {
+          btn.className = 'preset-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg border bg-amber-500/15 border-amber-500/50 text-amber-300 transition cursor-pointer';
+        } else {
+          btn.className = 'preset-btn px-2.5 py-1.5 text-xs font-medium rounded-lg border bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition cursor-pointer';
+        }
+      });
+    }
+
+    function initializePoints(points, presetIdx = -1) {
+      stopPlay();
+      currentPoints = points.map(p => [...p]);
+      activePresetIndex = presetIdx;
+      updatePresetButtons();
+
+      document.getElementById('custom-points-input').value = JSON.stringify(currentPoints);
+      steps = generateTrace(currentPoints);
+      currentStepIdx = 0;
+      updateUI();
+    }
+
+    function loadPreset(idx) {
+      initializePoints(PRESETS[idx].points, idx);
+    }
+
+    function toggleCustomModal() {
+      const modal = document.getElementById('custom-modal');
+      document.getElementById('custom-points-error').classList.add('hidden');
+      const willOpen = modal.classList.contains('hidden');
+      modal.classList.toggle('hidden');
+      if (willOpen) {
+        pickerPoints = currentPoints
+          .filter(([x, y]) => x >= 0 && x <= 10 && y >= 0 && y <= 10)
+          .map(p => [...p]);
+        document.getElementById('custom-points-input').value = JSON.stringify(currentPoints);
+        renderPickerSVG();
+      }
+    }
+
+    function applyCustomPoints() {
+      const errEl = document.getElementById('custom-points-error');
+      try {
+        const parsed = JSON.parse(document.getElementById('custom-points-input').value.trim());
+        if (!Array.isArray(parsed) || parsed.length < 2 || parsed.length > 8) {
+          throw new Error('Please provide between 2 and 8 points as a 2D JSON array [[x, y], ...].');
+        }
+        const seen = new Set();
+        for (const pt of parsed) {
+          if (!Array.isArray(pt) || pt.length !== 2 || typeof pt[0] !== 'number' || typeof pt[1] !== 'number' || !Number.isFinite(pt[0]) || !Number.isFinite(pt[1])) {
+            throw new Error('Each point must be a pair of numbers [x, y].');
+          }
+          const key = `${pt[0]},${pt[1]}`;
+          if (seen.has(key)) {
+            throw new Error(`Duplicate coordinate (${pt[0]}, ${pt[1]}) is not allowed.`);
+          }
+          seen.add(key);
+        }
+
+        const normalized = parsed.map(([x, y]) => [Math.round(x), Math.round(y)]);
+        toggleCustomModal();
+        initializePoints(normalized, -1);
+      } catch (e) {
+        errEl.textContent = e.message || 'Invalid JSON array format.';
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    function stepForward() {
+      if (currentStepIdx < steps.length - 1) {
+        currentStepIdx++;
+        updateUI();
+      } else {
+        stopPlay();
+      }
+    }
+
+    function stepBackward() {
+      stopPlay();
+      if (currentStepIdx > 0) {
+        currentStepIdx--;
+        updateUI();
+      }
+    }
+
+    function resetVisualizer() {
+      stopPlay();
+      currentStepIdx = 0;
+      updateUI();
+    }
+
+    function startPlay() {
+      if (currentStepIdx >= steps.length - 1) {
+        currentStepIdx = 0;
+        updateUI();
+      }
+      isPlaying = true;
+      document.getElementById('icon-play').classList.add('hidden');
+      document.getElementById('icon-pause').classList.remove('hidden');
+      document.getElementById('play-label').textContent = 'Pause';
+
+      const sliderVal = document.getElementById('speed-slider').value;
+      const delay = SPEED_MAP[sliderVal].ms;
+
+      playTimer = setInterval(() => {
+        if (currentStepIdx < steps.length - 1) {
+          currentStepIdx++;
+          updateUI();
+        } else {
+          stopPlay();
+        }
+      }, delay);
+    }
+
+    function stopPlay() {
+      isPlaying = false;
+      if (playTimer) {
+        clearInterval(playTimer);
+        playTimer = null;
+      }
+      document.getElementById('icon-play').classList.remove('hidden');
+      document.getElementById('icon-pause').classList.add('hidden');
+      document.getElementById('play-label').textContent = 'Play';
+    }
+
+    function togglePlay() {
+      if (isPlaying) stopPlay();
+      else startPlay();
+    }
+
+    document.getElementById('speed-slider').addEventListener('input', (e) => {
+      const val = e.target.value;
+      document.getElementById('speed-label').textContent = SPEED_MAP[val].label;
+      if (isPlaying) {
+        stopPlay();
+        startPlay();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        stopPlay();
+        stepForward();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        stepBackward();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key.toLowerCase() === 'r') {
+        resetVisualizer();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderCodePanel();
+      loadPreset(0);
+    });
+  </script>
+</body>
+</html>
